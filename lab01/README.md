@@ -1,4 +1,6 @@
-![Схема стенда](lab01/stand-plan.png)
+### Схема стенда
+
+![stand-plan](stand-plan.png)
 
 | Device A  | Interface A | IP A          | Device B  | Interface B | IP B          |
 |-----------|-------------|---------------|-----------|-------------|---------------|
