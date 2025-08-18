@@ -16,6 +16,8 @@
 Адреса для хостов - 172.16.x.z/24, где x - номер leaf, z - по порядку адрес хоста, на leaf ip .1
 Адреса loopback 192.168.a.b/32, где a - 1 для spine, 2 - для leaf, b - номер spine, leaf по порядку
 
+Interconnect
+
 | Device A  | Interface A | IP A          | Device B  | Interface B | IP B          |
 |-----------|-------------|---------------|-----------|-------------|---------------|
 | Spine-1  | Eth1      | 10.1.1.1/30    | Leaf-1  | Eth8      	| 10.1.1.2/30    |
@@ -49,9 +51,9 @@ loopback
 или под катом
 
 <details>
-  <summary>topology</summary>
+  <summary>topology.yml </summary>
 
-  ```
+  ```yml
 ---
 provider: clab
 
@@ -188,13 +190,14 @@ links:
     prefix:
       ipv4: 172.16.4.0/24
 ```
+</details>
 
-### Проверка работы
+## Проверка работы
 
 <details>
-  <summary>s1 </summary>
-
-  ```  
+  <summary>spine-1</summary>
+  
+  ```txt  
 s1#ping 10.1.1.2
 PING 10.1.1.2 (10.1.1.2) 72(100) bytes of data.
 80 bytes from 10.1.1.2: icmp_seq=1 ttl=64 time=0.137 ms
@@ -261,13 +264,13 @@ Address         Age (sec)  Hardware Addr   Interface
 10.1.1.2          0:02:09  aac1.abff.0f0e  Ethernet1
 10.1.1.6          0:02:02  aac1.ab68.d548  Ethernet2
 10.1.1.10         0:01:58  aac1.abf2.ccef  Ethernet3
-
 ```
+</details>
 
 <details>
-  <summary>s2 </summary>
+  <summary>spine-2 </summary>
 
-  ```  
+  ```txt  
 s2#ping 10.1.2.2
 PING 10.1.2.2 (10.1.2.2) 72(100) bytes of data.
 80 bytes from 10.1.2.2: icmp_seq=1 ttl=64 time=0.128 ms
@@ -335,4 +338,6 @@ Address         Age (sec)  Hardware Addr   Interface
 10.1.2.6          0:00:07  aac1.ab74.efe2  Ethernet2
 10.1.2.10         0:00:05  aac1.abf5.61f3  Ethernet3
 ```
+</details>
+
 Пинговать хосты или leaf между собой лишено смысла, т.к. нет маршрутов на устройствах.
