@@ -51,7 +51,8 @@ loopback
 <details>
   <summary>topology</summary>
 
-  ```---
+  ```
+---
 provider: clab
 
 nodes:
