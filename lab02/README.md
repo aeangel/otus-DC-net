@@ -1,8 +1,13 @@
-### Задание
+### Задание Underlay. OSPF
 
-1.Соберете топологию CLOS, как на схеме: 
-2.Распределите адресное пространство для Underlay сети
-3.Зафиксируете в документации план работ, адресное пространство, схему сети, настройки (если перенесли на оборудование)
+Цель:
+Настроить OSPF для Underlay сети.
+
+Задачи:
+Настроите OSPF в Underlay сети, для IP связанности между всеми сетевыми устройствами.
+Зафиксируете в документации - план работы, адресное пространство, схему сети, конфигурацию устройств
+Убедитесь в наличии IP связанности между устройствами в OSFP домене
+
 
 ### Схема стенда
 
@@ -15,7 +20,7 @@
 План составлен с учетом 10.x.y.z, где x - номер DC, y - номер spine, z - по очереди для подключения leaf
 Адреса для хостов - 172.16.x.z/24, где x - номер leaf, z - по порядку адрес хоста, на leaf ip .1
 Адреса loopback 192.168.a.b/32, где a - 1 для spine, 2 - для leaf, b - номер spine, leaf по порядку
-Адресацию ipv6 делаем по прицнипу из fd00::[IPv4]:[host]
+Адресацию ipv6 делаем по прицнипу из fd00::[IPv4]
 
 Interconnect ipv4 ipv6
 
@@ -47,6 +52,14 @@ loopback
 
 ### Запуск лабараторной в среде netlab
 Так как у самурая только путь, делаем все в netlab-tools.
+Заметки по использованию netlab:
+Для работы bfd в frr нужно включить его принудительно в образе по умолчанию, т.к. в netlab не заявлено поддержки bfd на оборудовании frr. 
+Правим файл /usr/local/lib/python3.10/dist-packages/netsim/templates/provider/clab/frr/daemons.j2 включая демона - bfdd=yes.
+Так же если хотим использовать другие протоколы в frr, без подключения модулей в netlab в этом же файле нужно включить желаемых демонов.
+Заметки по лабе:
+Для ospf включаем шифрование для подключений leaf-spine, пароли spine1, spine2 соответсвенно. Clear-text password используем т.к. netlab не может работать с md5 для frr, но так как аутентификация нам нужна для подстраховки от ошибки, не критично использование открытого пароля.
+Также включаем bfd для интерфейсов, таймеры явно получатся завышенными, но моя практика показывает что для виртуальных устройств лучше не использовать значения меньше 500 мс, поэтому не критично.
+
 
 ![конфиг файл](./topology.yml)
 или под катом
@@ -57,6 +70,7 @@ loopback
   ```yml
 ---
 provider: clab
+module: [ ospf ]
 
 nodes:
  s1:
@@ -64,26 +78,31 @@ nodes:
   id: 1
   loopback:
     ipv4: 192.168.1.1/32
+    ipv6: fd00::192:168:1:1/128
  s2:
   device: eos
   id: 2
   loopback:
     ipv4: 192.168.1.2/32
+    ipv6: fd00::192:168:1:2/128
  l1:
   device: frr
   id: 3
   loopback:
     ipv4: 192.168.2.1/32
+    ipv6: fd00::192:168:2:1/128
  l2:
   device: frr
   id: 4
   loopback:
     ipv4: 192.168.2.2/32
+    ipv6: fd00::192:168:2:2/128
  l3:
   device: frr
   id: 5
   loopback:
     ipv4: 192.168.2.3/32
+    ipv6: fd00::192:168:2:3/128
  h1:
   device: linux
  h2:
@@ -98,98 +117,169 @@ links:
   - interfaces:
       - node: s1
         ifname: eth1
-        ipv4: 10.1.1.1
+        ipv4: 10.1.1.0
+        ipv6: fd00::10:1:1:0
+        ospf:
+          password: 'spine1'
+          bfd: true
       - node: l1
         ifname: eth8
-        ipv4: 10.1.1.2
+        ipv4: 10.1.1.1
+        ipv6: fd00::10:1:1:1
+        ospf:
+          password: 'spine1'
+          bfd: true
     prefix:
-      ipv4: 10.1.1.0/30
+      ipv4: 10.1.1.0/31
+      ipv6: fd00::10:1:1:0/127
   - interfaces:
       - node: s1
         ifname: eth2
-        ipv4: 10.1.1.5
+        ipv4: 10.1.1.2
+        ipv6: fd00::10:1:1:2
+        ospf:
+          password: 'spine1'
+          bfd: true
       - node: l2
         ifname: eth8
-        ipv4: 10.1.1.6
+        ipv4: 10.1.1.3
+        ipv6: fd00::10:1:1:3
+        ospf:
+          password: 'spine1'
+          bfd: true
     prefix:
-      ipv4: 10.1.1.4/30
+      ipv4: 10.1.1.2/31
+      ipv6: fd00::10:1:1:2/127
   - interfaces:
       - node: s1
         ifname: eth3
-        ipv4: 10.1.1.9
+        ipv4: 10.1.1.4
+        ipv6: fd00::10:1:1:4
+        ospf:
+          password: 'spine1'
+          bfd: true
       - node: l3
         ifname: eth8
-        ipv4: 10.1.1.10
+        ipv4: 10.1.1.5
+        ipv6: fd00::10:1:1:5
+        ospf:
+          password: 'spine1'
+          bfd: true
     prefix:
-      ipv4: 10.1.1.8/30
+      ipv4: 10.1.1.4/31
+      ipv6: fd00::10:1:1:4/127
 #spine2-leaf1,2,3
   - interfaces:
       - node: s2
         ifname: eth1
-        ipv4: 10.1.2.1
+        ipv4: 10.1.2.0
+        ipv6: fd00::10:1:2:0
+        ospf:
+          password: 'spine2'
+          bfd: true
       - node: l1
         ifname: eth9
-        ipv4: 10.1.2.2
+        ipv4: 10.1.2.1
+        ipv6: fd00::10:1:2:1
+        ospf:
+          password: 'spine2'
+          bfd: true
     prefix:
-      ipv4: 10.1.2.0/30
+      ipv4: 10.1.2.0/31
+      ipv6: fd00::10:1:2:0/127
   - interfaces:
       - node: s2
         ifname: eth2
-        ipv4: 10.1.2.5
+        ipv4: 10.1.2.2
+        ipv6: fd00::10:1:2:2
+        ospf:
+          password: 'spine2'
+          bfd: true
       - node: l2
         ifname: eth9
-        ipv4: 10.1.2.6
+        ipv4: 10.1.2.3
+        ipv6: fd00::10:1:2:3
+        ospf:
+          password: 'spine2'
+          bfd: true
     prefix:
-      ipv4: 10.1.2.4/30
+      ipv4: 10.1.2.2/31
+      ipv6: fd00::10:1:2:2/127
   - interfaces:
       - node: s2
         ifname: eth3
-        ipv4: 10.1.2.9
+        ipv4: 10.1.2.4
+        ipv6: fd00::10:1:2:4
+        ospf:
+          password: 'spine2'
+          bfd: true
       - node: l3
         ifname: eth9
-        ipv4: 10.1.2.10
+        ipv4: 10.1.2.5
+        ipv6: fd00::10:1:2:5
+        ospf:
+          password: 'spine2'
+          bfd: true
     prefix:
-      ipv4: 10.1.2.8/30
+      ipv4: 10.1.2.4/31
+      ipv6: fd00::10:1:2:4/127
 #host1
   - interfaces:
       - node: h1
         ifname: eth1
         ipv4: 172.16.1.2
+        ipv6: fd00::172:16:1:2
       - node: l1
         ifname: eth1
         ipv4: 172.16.1.1
+        ipv6: fd00::172:16:1:1
+        ospf: false
     prefix:
       ipv4: 172.16.1.0/24
+      ipv6: fd00::172:16:1:0/116
 #host2
   - interfaces:
       - node: h2
         ifname: eth1
         ipv4: 172.16.2.2
+        ipv6: fd00::172:16:2:2
       - node: l2
         ifname: eth1
         ipv4: 172.16.2.1
+        ipv6: fd00::172:16:2:1
+        ospf: false
     prefix:
       ipv4: 172.16.2.0/24
+      ipv6: fd00::172:16:1:0/116
 #host3
   - interfaces:
       - node: h3
         ifname: eth1
         ipv4: 172.16.3.2
+        ipv6: fd00::172:16:3:2
       - node: l3
         ifname: eth1
         ipv4: 172.16.3.1
+        ipv6: fd00::172:16:3:1
+        ospf: false
     prefix:
       ipv4: 172.16.3.0/24
+      ipv6: fd00::172:16:3:0/116
 #host4
   - interfaces:
       - node: h4
         ifname: eth1
-        ipv4: 172.16.4.3
+        ipv4: 172.16.4.2
+        ipv6: fd00::172:16:4:2
       - node: l3
         ifname: eth2
         ipv4: 172.16.4.1
+        ipv6: fd00::172:16:4:1
+        ospf: false
     prefix:
       ipv4: 172.16.4.0/24
+      ipv6: fd00::172:16:4:0/116
+
 ```
 </details>
 
@@ -341,4 +431,3 @@ Address         Age (sec)  Hardware Addr   Interface
 ```
 </details>
 
-Пинговать хосты или leaf между собой лишено смысла, т.к. нет маршрутов на устройствах.
