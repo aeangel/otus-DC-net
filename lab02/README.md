@@ -289,72 +289,92 @@ links:
   <summary>spine-1</summary>
   
   ```txt  
-s1#ping 10.1.1.2
-PING 10.1.1.2 (10.1.1.2) 72(100) bytes of data.
-80 bytes from 10.1.1.2: icmp_seq=1 ttl=64 time=0.137 ms
-80 bytes from 10.1.1.2: icmp_seq=2 ttl=64 time=0.002 ms
-80 bytes from 10.1.1.2: icmp_seq=3 ttl=64 time=0.004 ms
-80 bytes from 10.1.1.2: icmp_seq=4 ttl=64 time=0.018 ms
-80 bytes from 10.1.1.2: icmp_seq=5 ttl=64 time=0.005 ms
-
---- 10.1.1.2 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.002/0.033/0.137/0.052 ms, ipg/ewma 0.063/0.083 ms
-s1#ping 10.1.1.6
-PING 10.1.1.6 (10.1.1.6) 72(100) bytes of data.
-80 bytes from 10.1.1.6: icmp_seq=1 ttl=64 time=0.129 ms
-80 bytes from 10.1.1.6: icmp_seq=2 ttl=64 time=0.013 ms
-80 bytes from 10.1.1.6: icmp_seq=3 ttl=64 time=0.012 ms
-80 bytes from 10.1.1.6: icmp_seq=4 ttl=64 time=0.007 ms
-80 bytes from 10.1.1.6: icmp_seq=5 ttl=64 time=0.031 ms
-
---- 10.1.1.6 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.007/0.038/0.129/0.046 ms, ipg/ewma 0.096/0.082 ms
-s1#ping 10.1.1.10
-PING 10.1.1.10 (10.1.1.10) 72(100) bytes of data.
-80 bytes from 10.1.1.10: icmp_seq=1 ttl=64 time=0.131 ms
-80 bytes from 10.1.1.10: icmp_seq=2 ttl=64 time=0.013 ms
-80 bytes from 10.1.1.10: icmp_seq=3 ttl=64 time=0.014 ms
-80 bytes from 10.1.1.10: icmp_seq=4 ttl=64 time=0.008 ms
-80 bytes from 10.1.1.10: icmp_seq=5 ttl=64 time=0.006 ms
-
---- 10.1.1.10 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.006/0.034/0.131/0.048 ms, ipg/ewma 0.074/0.081 ms
 s1#show ip ro
 
 VRF: default
-Source Codes:
-       C - connected, S - static, K - kernel,
-       O - OSPF, IA - OSPF inter area, E1 - OSPF external type 1,
-       E2 - OSPF external type 2, N1 - OSPF NSSA external type 1,
-       N2 - OSPF NSSA external type2, B - Other BGP Routes,
-       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
-       I L2 - IS-IS level 2, O3 - OSPFv3, A B - BGP Aggregate,
-       A O - OSPF Summary, NG - Nexthop Group Static Route,
-       V - VXLAN Control Service, M - Martian,
-       DH - DHCP client installed default route,
-       DP - Dynamic Policy Route, L - VRF Leaked,
-       G  - gRIBI, RC - Route Cache Route,
-       CL - CBF Leaked Route
 
 Gateway of last resort is not set
 
- C        10.1.1.0/30
+ C        10.1.1.0/31
            directly connected, Ethernet1
- C        10.1.1.4/30
+ C        10.1.1.2/31
            directly connected, Ethernet2
- C        10.1.1.8/30
+ C        10.1.1.4/31
            directly connected, Ethernet3
+ O        10.1.2.0/31 [110/20]
+           via 10.1.1.1, Ethernet1
+ O        10.1.2.2/31 [110/20]
+           via 10.1.1.3, Ethernet2
+ O        10.1.2.4/31 [110/20]
+           via 10.1.1.5, Ethernet3
  C        192.168.1.1/32
            directly connected, Loopback0
+ O        192.168.1.2/32 [110/30]
+           via 10.1.1.1, Ethernet1
+           via 10.1.1.3, Ethernet2
+           via 10.1.1.5, Ethernet3
+ O        192.168.2.1/32 [110/10]
+           via 10.1.1.1, Ethernet1
+ O        192.168.2.2/32 [110/10]
+           via 10.1.1.3, Ethernet2
+ O        192.168.2.3/32 [110/10]
+           via 10.1.1.5, Ethernet3
 
-s1#show arp
-Address         Age (sec)  Hardware Addr   Interface
-10.1.1.2          0:02:09  aac1.abff.0f0e  Ethernet1
-10.1.1.6          0:02:02  aac1.ab68.d548  Ethernet2
-10.1.1.10         0:01:58  aac1.abf2.ccef  Ethernet3
+s1#show ipv6 ro
+
+VRF: default
+
+ O3       fd00::10:1:1:1/128 [110/10]
+           via fe80::a8c1:abff:fe9a:849, Ethernet1
+ C        fd00::10:1:1:0/127 [0/0]
+           via Ethernet1, directly connected
+ O3       fd00::10:1:1:3/128 [110/10]
+           via fe80::a8c1:abff:fef1:7cc4, Ethernet2
+ C        fd00::10:1:1:2/127 [0/0]
+           via Ethernet2, directly connected
+ O3       fd00::10:1:1:5/128 [110/10]
+           via fe80::a8c1:abff:feef:e7a2, Ethernet3
+ C        fd00::10:1:1:4/127 [0/0]
+           via Ethernet3, directly connected
+ O3       fd00::10:1:2:1/128 [110/10]
+           via fe80::a8c1:abff:fe9a:849, Ethernet1
+ O3       fd00::10:1:2:0/127 [110/20]
+           via fe80::a8c1:abff:fe9a:849, Ethernet1
+ O3       fd00::10:1:2:3/128 [110/10]
+           via fe80::a8c1:abff:fef1:7cc4, Ethernet2
+ O3       fd00::10:1:2:2/127 [110/20]
+           via fe80::a8c1:abff:fef1:7cc4, Ethernet2
+ O3       fd00::10:1:2:5/128 [110/10]
+           via fe80::a8c1:abff:feef:e7a2, Ethernet3
+ O3       fd00::10:1:2:4/127 [110/20]
+           via fe80::a8c1:abff:feef:e7a2, Ethernet3
+ C        fd00::192:168:1:1/128 [0/0]
+           via Loopback0, directly connected
+ O3       fd00::192:168:1:2/128 [110/30]
+           via fe80::a8c1:abff:fe9a:849, Ethernet1
+           via fe80::a8c1:abff:fef1:7cc4, Ethernet2
+           via fe80::a8c1:abff:feef:e7a2, Ethernet3
+ O3       fd00::192:168:2:1/128 [110/10]
+           via fe80::a8c1:abff:fe9a:849, Ethernet1
+ O3       fd00::192:168:2:2/128 [110/10]
+           via fe80::a8c1:abff:fef1:7cc4, Ethernet2
+ O3       fd00::192:168:2:3/128 [110/10]
+           via fe80::a8c1:abff:feef:e7a2, Ethernet3
+
+s1#show bfd peers
+VRF name: default
+-----------------
+DstAddr               MyDisc         YourDisc       Interface/Transport         Type               LastUp       LastDown            LastDiag    State
+-------------- ---------------- ---------------- ------------------------- ------------ -------------------- -------------- ------------------- -----
+10.1.1.1          4036363286       3063445977           Ethernet1(1129)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+10.1.1.3          1231824312       1715554816           Ethernet2(1131)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+10.1.1.5          2599637788       1867128317           Ethernet3(1133)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+
+DstAddr                                MyDisc        YourDisc       Interface/Transport         Type               LastUp       LastDown            LastDiag    State
+------------------------------- ---------------- --------------- ------------------------- ------------ -------------------- -------------- ------------------- -----
+fe80::a8c1:abff:fe9a:849           4221965281       365649942           Ethernet1(1129)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+fe80::a8c1:abff:feef:e7a2          1006718991       365649942           Ethernet3(1133)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+fe80::a8c1:abff:fef1:7cc4           216279368       503132544           Ethernet2(1131)       normal       08/20/25 22:21             NA       No Diagnostic       Up
 ```
 </details>
 
@@ -362,72 +382,189 @@ Address         Age (sec)  Hardware Addr   Interface
   <summary>spine-2 </summary>
 
   ```txt  
-s2#ping 10.1.2.2
-PING 10.1.2.2 (10.1.2.2) 72(100) bytes of data.
-80 bytes from 10.1.2.2: icmp_seq=1 ttl=64 time=0.128 ms
-80 bytes from 10.1.2.2: icmp_seq=2 ttl=64 time=0.016 ms
-80 bytes from 10.1.2.2: icmp_seq=3 ttl=64 time=0.008 ms
-80 bytes from 10.1.2.2: icmp_seq=4 ttl=64 time=0.000 ms
-80 bytes from 10.1.2.2: icmp_seq=5 ttl=64 time=0.023 ms
-
---- 10.1.2.2 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.000/0.035/0.128/0.047 ms, ipg/ewma 0.092/0.080 ms
-s2#ping 10.1.2.6
-PING 10.1.2.6 (10.1.2.6) 72(100) bytes of data.
-80 bytes from 10.1.2.6: icmp_seq=1 ttl=64 time=0.147 ms
-80 bytes from 10.1.2.6: icmp_seq=2 ttl=64 time=0.013 ms
-80 bytes from 10.1.2.6: icmp_seq=3 ttl=64 time=0.012 ms
-80 bytes from 10.1.2.6: icmp_seq=4 ttl=64 time=0.011 ms
-80 bytes from 10.1.2.6: icmp_seq=5 ttl=64 time=0.010 ms
-
---- 10.1.2.6 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.010/0.038/0.147/0.054 ms, ipg/ewma 0.081/0.091 ms
-s2#ping 10.1.2.10
-PING 10.1.2.10 (10.1.2.10) 72(100) bytes of data.
-80 bytes from 10.1.2.10: icmp_seq=1 ttl=64 time=0.128 ms
-80 bytes from 10.1.2.10: icmp_seq=2 ttl=64 time=0.013 ms
-80 bytes from 10.1.2.10: icmp_seq=3 ttl=64 time=0.011 ms
-80 bytes from 10.1.2.10: icmp_seq=4 ttl=64 time=0.010 ms
-80 bytes from 10.1.2.10: icmp_seq=5 ttl=64 time=0.008 ms
-
---- 10.1.2.10 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.008/0.034/0.128/0.047 ms, ipg/ewma 0.065/0.079 ms
 s2#show ip ro
 
 VRF: default
-Source Codes:
-       C - connected, S - static, K - kernel,
-       O - OSPF, IA - OSPF inter area, E1 - OSPF external type 1,
-       E2 - OSPF external type 2, N1 - OSPF NSSA external type 1,
-       N2 - OSPF NSSA external type2, B - Other BGP Routes,
-       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
-       I L2 - IS-IS level 2, O3 - OSPFv3, A B - BGP Aggregate,
-       A O - OSPF Summary, NG - Nexthop Group Static Route,
-       V - VXLAN Control Service, M - Martian,
-       DH - DHCP client installed default route,
-       DP - Dynamic Policy Route, L - VRF Leaked,
-       G  - gRIBI, RC - Route Cache Route,
-       CL - CBF Leaked Route
+
 
 Gateway of last resort is not set
 
- C        10.1.2.0/30
+ O        10.1.1.0/31 [110/20]
+           via 10.1.2.1, Ethernet1
+ O        10.1.1.2/31 [110/20]
+           via 10.1.2.3, Ethernet2
+ O        10.1.1.4/31 [110/20]
+           via 10.1.2.5, Ethernet3
+ C        10.1.2.0/31
            directly connected, Ethernet1
- C        10.1.2.4/30
+ C        10.1.2.2/31
            directly connected, Ethernet2
- C        10.1.2.8/30
+ C        10.1.2.4/31
            directly connected, Ethernet3
+ O        192.168.1.1/32 [110/30]
+           via 10.1.2.1, Ethernet1
+           via 10.1.2.3, Ethernet2
+           via 10.1.2.5, Ethernet3
  C        192.168.1.2/32
            directly connected, Loopback0
+ O        192.168.2.1/32 [110/10]
+           via 10.1.2.1, Ethernet1
+ O        192.168.2.2/32 [110/10]
+           via 10.1.2.3, Ethernet2
+ O        192.168.2.3/32 [110/10]
+           via 10.1.2.5, Ethernet3
 
-s2#show arp
-Address         Age (sec)  Hardware Addr   Interface
-10.1.2.2          0:00:11  aac1.abdd.eb6a  Ethernet1
-10.1.2.6          0:00:07  aac1.ab74.efe2  Ethernet2
-10.1.2.10         0:00:05  aac1.abf5.61f3  Ethernet3
+s2#show ipv6 ro
+
+VRF: default
+Displaying 17 of 23 IPv6 routing table entries
+
+ O3       fd00::10:1:1:1/128 [110/10]
+           via fe80::a8c1:abff:fe45:5487, Ethernet1
+ O3       fd00::10:1:1:0/127 [110/20]
+           via fe80::a8c1:abff:fe45:5487, Ethernet1
+ O3       fd00::10:1:1:3/128 [110/10]
+           via fe80::a8c1:abff:feab:149e, Ethernet2
+ O3       fd00::10:1:1:2/127 [110/20]
+           via fe80::a8c1:abff:feab:149e, Ethernet2
+ O3       fd00::10:1:1:5/128 [110/10]
+           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
+ O3       fd00::10:1:1:4/127 [110/20]
+           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
+ O3       fd00::10:1:2:1/128 [110/10]
+           via fe80::a8c1:abff:fe45:5487, Ethernet1
+ C        fd00::10:1:2:0/127 [0/0]
+           via Ethernet1, directly connected
+ O3       fd00::10:1:2:3/128 [110/10]
+           via fe80::a8c1:abff:feab:149e, Ethernet2
+ C        fd00::10:1:2:2/127 [0/0]
+           via Ethernet2, directly connected
+ O3       fd00::10:1:2:5/128 [110/10]
+           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
+ C        fd00::10:1:2:4/127 [0/0]
+           via Ethernet3, directly connected
+ O3       fd00::192:168:1:1/128 [110/30]
+           via fe80::a8c1:abff:fe45:5487, Ethernet1
+           via fe80::a8c1:abff:feab:149e, Ethernet2
+           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
+ C        fd00::192:168:1:2/128 [0/0]
+           via Loopback0, directly connected
+ O3       fd00::192:168:2:1/128 [110/10]
+           via fe80::a8c1:abff:fe45:5487, Ethernet1
+ O3       fd00::192:168:2:2/128 [110/10]
+           via fe80::a8c1:abff:feab:149e, Ethernet2
+ O3       fd00::192:168:2:3/128 [110/10]
+           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
+
+s2#show bfd peers
+VRF name: default
+-----------------
+DstAddr               MyDisc         YourDisc       Interface/Transport         Type               LastUp       LastDown            LastDiag    State
+-------------- ---------------- ---------------- ------------------------- ------------ -------------------- -------------- ------------------- -----
+10.1.2.1          1038882734       1867128317           Ethernet1(1140)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+10.1.2.3           476357661       2044274492           Ethernet2(1144)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+10.1.2.5          2107959149       3063445977           Ethernet3(1146)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+
+DstAddr                                MyDisc         YourDisc       Interface/Transport         Type               LastUp       LastDown            LastDiag    State
+------------------------------- ---------------- ---------------- ------------------------- ------------ -------------------- -------------- ------------------- -----
+fe80::a8c1:abff:fe2a:bc56           755184907       3120229879           Ethernet3(1146)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+fe80::a8c1:abff:fe45:5487          2205458108       3120229879           Ethernet1(1140)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+fe80::a8c1:abff:feab:149e          1370192998       1612082641           Ethernet2(1144)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+
 ```
 </details>
+
+### Проверяем пинг loopback всех устройств с leaf-1.
+
+<details>
+  <summary>leaf-1 pings </summary>
+
+  ```txt  
+l1# ping 192.168.2.2
+PING 192.168.2.2 (192.168.2.2): 56 data bytes
+64 bytes from 192.168.2.2: seq=0 ttl=63 time=0.813 ms
+64 bytes from 192.168.2.2: seq=1 ttl=63 time=0.961 ms
+64 bytes from 192.168.2.2: seq=2 ttl=63 time=0.964 ms
+64 bytes from 192.168.2.2: seq=3 ttl=63 time=0.932 ms
+^C
+--- 192.168.2.2 ping statistics ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max = 0.813/0.917/0.964 ms
+l1# ping 192.168.2.3
+PING 192.168.2.3 (192.168.2.3): 56 data bytes
+64 bytes from 192.168.2.3: seq=0 ttl=63 time=1.186 ms
+64 bytes from 192.168.2.3: seq=1 ttl=63 time=1.043 ms
+64 bytes from 192.168.2.3: seq=2 ttl=63 time=1.222 ms
+64 bytes from 192.168.2.3: seq=3 ttl=63 time=1.048 ms
+^C
+--- 192.168.2.3 ping statistics ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max = 1.043/1.124/1.222 ms
+l1# ping 192.168.1.1
+PING 192.168.1.1 (192.168.1.1): 56 data bytes
+64 bytes from 192.168.1.1: seq=0 ttl=64 time=0.145 ms
+64 bytes from 192.168.1.1: seq=1 ttl=64 time=0.118 ms
+64 bytes from 192.168.1.1: seq=2 ttl=64 time=0.099 ms
+64 bytes from 192.168.1.1: seq=3 ttl=64 time=0.098 ms
+^C
+--- 192.168.1.1 ping statistics ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max = 0.098/0.115/0.145 ms
+l1# ping 192.168.1.2
+PING 192.168.1.2 (192.168.1.2): 56 data bytes
+64 bytes from 192.168.1.2: seq=0 ttl=64 time=0.102 ms
+64 bytes from 192.168.1.2: seq=1 ttl=64 time=0.101 ms
+64 bytes from 192.168.1.2: seq=2 ttl=64 time=0.101 ms
+64 bytes from 192.168.1.2: seq=3 ttl=64 time=0.112 ms
+^C
+--- 192.168.1.2 ping statistics ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max = 0.101/0.104/0.112 ms
+l1# ping ipv6 fd00::192:168:2:2
+PING fd00::192:168:2:2 (fd00::192:168:2:2): 56 data bytes
+64 bytes from fd00::192:168:2:2: seq=0 ttl=63 time=1.543 ms
+64 bytes from fd00::192:168:2:2: seq=1 ttl=63 time=0.781 ms
+64 bytes from fd00::192:168:2:2: seq=2 ttl=63 time=1.588 ms
+^C
+--- fd00::192:168:2:2 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.781/1.304/1.588 ms
+l1# ping ipv6 fd00::192:168:2:3
+PING fd00::192:168:2:3 (fd00::192:168:2:3): 56 data bytes
+64 bytes from fd00::192:168:2:3: seq=0 ttl=63 time=1.360 ms
+64 bytes from fd00::192:168:2:3: seq=1 ttl=63 time=0.760 ms
+64 bytes from fd00::192:168:2:3: seq=2 ttl=63 time=0.913 ms
+^C
+--- fd00::192:168:2:3 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.760/1.011/1.360 ms
+l1# ping ipv6 fd00::192:168:1:1
+PING fd00::192:168:1:1 (fd00::192:168:1:1): 56 data bytes
+64 bytes from fd00::192:168:1:1: seq=0 ttl=64 time=0.096 ms
+64 bytes from fd00::192:168:1:1: seq=1 ttl=64 time=0.149 ms
+64 bytes from fd00::192:168:1:1: seq=2 ttl=64 time=0.101 ms
+^C
+--- fd00::192:168:1:1 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.096/0.115/0.149 ms
+l1# ping ipv6 fd00::192:168:1:2
+PING fd00::192:168:1:2 (fd00::192:168:1:2): 56 data bytes
+64 bytes from fd00::192:168:1:2: seq=0 ttl=64 time=0.111 ms
+64 bytes from fd00::192:168:1:2: seq=1 ttl=64 time=0.128 ms
+64 bytes from fd00::192:168:1:2: seq=2 ttl=64 time=0.116 ms
+64 bytes from fd00::192:168:1:2: seq=3 ttl=64 time=0.097 ms
+^C
+--- fd00::192:168:1:2 ping statistics ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max = 0.097/0.113/0.128 ms
+
+```
+</details>
+
+Конфигурационные файлы устройств:  
+![Leaf-1](./l1.conf)
+![Leaf-2](./l2.conf)
+![Leaf-3](./l3.conf)
+![Spine-1](./s1.conf)
+![Spine-2](./s2.conf)
 
