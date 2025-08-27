@@ -3,13 +3,11 @@
 Цель:
 Настроить IS-IS для Underlay сети.
 
-Описание/Пошаговая инструкция выполнения домашнего задания:
-
 ### Схема стенда
 
 ![stand-plan](stand-plan.png)
 
-Стенд делаем по принципу - хосты linux, leaf - frr, spine - arista
+Стенд делаем по принципу - хосты linux, leaf - frr, spine - eos (arista)
 
 ### Распределение адресного пространства для Underlay
 
@@ -412,6 +410,10 @@ IS-IS Instance: netlab VRF: default
 
   ```txt  
 
+s2#show ip ro
+
+Gateway of last resort is not set
+
  I L2     10.1.1.0/31 [115/20]
            via 10.1.2.1, Ethernet1
  I L2     10.1.1.2/31 [115/20]
@@ -436,158 +438,168 @@ IS-IS Instance: netlab VRF: default
            via 10.1.2.3, Ethernet2
  I L2     192.168.2.3/32 [115/20]
            via 10.1.2.5, Ethernet3
-           
+
 s2#show ipv6 ro
 
 VRF: default
-Displaying 17 of 23 IPv6 routing table entries
 
- O3       fd00::10:1:1:1/128 [110/10]
-           via fe80::a8c1:abff:fe45:5487, Ethernet1
- O3       fd00::10:1:1:0/127 [110/20]
-           via fe80::a8c1:abff:fe45:5487, Ethernet1
- O3       fd00::10:1:1:3/128 [110/10]
-           via fe80::a8c1:abff:feab:149e, Ethernet2
- O3       fd00::10:1:1:2/127 [110/20]
-           via fe80::a8c1:abff:feab:149e, Ethernet2
- O3       fd00::10:1:1:5/128 [110/10]
-           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
- O3       fd00::10:1:1:4/127 [110/20]
-           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
- O3       fd00::10:1:2:1/128 [110/10]
-           via fe80::a8c1:abff:fe45:5487, Ethernet1
+ I L2     fd00::10:1:1:0/127 [115/20]
+           via fe80::a8c1:abff:fe8b:1dd7, Ethernet1
+ I L2     fd00::10:1:1:2/127 [115/20]
+           via fe80::a8c1:abff:fe10:3ceb, Ethernet2
+ I L2     fd00::10:1:1:4/127 [115/20]
+           via fe80::a8c1:abff:fee5:14ed, Ethernet3
  C        fd00::10:1:2:0/127 [0/0]
            via Ethernet1, directly connected
- O3       fd00::10:1:2:3/128 [110/10]
-           via fe80::a8c1:abff:feab:149e, Ethernet2
  C        fd00::10:1:2:2/127 [0/0]
            via Ethernet2, directly connected
- O3       fd00::10:1:2:5/128 [110/10]
-           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
  C        fd00::10:1:2:4/127 [0/0]
            via Ethernet3, directly connected
- O3       fd00::192:168:1:1/128 [110/30]
-           via fe80::a8c1:abff:fe45:5487, Ethernet1
-           via fe80::a8c1:abff:feab:149e, Ethernet2
-           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
+ I L2     fd00::192:168:1:1/128 [115/30]
+           via fe80::a8c1:abff:fe8b:1dd7, Ethernet1
+           via fe80::a8c1:abff:fe10:3ceb, Ethernet2
+           via fe80::a8c1:abff:fee5:14ed, Ethernet3
  C        fd00::192:168:1:2/128 [0/0]
            via Loopback0, directly connected
- O3       fd00::192:168:2:1/128 [110/10]
-           via fe80::a8c1:abff:fe45:5487, Ethernet1
- O3       fd00::192:168:2:2/128 [110/10]
-           via fe80::a8c1:abff:feab:149e, Ethernet2
- O3       fd00::192:168:2:3/128 [110/10]
-           via fe80::a8c1:abff:fe2a:bc56, Ethernet3
+ I L2     fd00::192:168:2:1/128 [115/20]
+           via fe80::a8c1:abff:fe8b:1dd7, Ethernet1
+ I L2     fd00::192:168:2:2/128 [115/20]
+           via fe80::a8c1:abff:fe10:3ceb, Ethernet2
+ I L2     fd00::192:168:2:3/128 [115/20]
+           via fe80::a8c1:abff:fee5:14ed, Ethernet3
 
 s2#show bfd peers
 VRF name: default
 -----------------
-DstAddr               MyDisc         YourDisc       Interface/Transport         Type               LastUp       LastDown            LastDiag    State
--------------- ---------------- ---------------- ------------------------- ------------ -------------------- -------------- ------------------- -----
-10.1.2.1          1038882734       1867128317           Ethernet1(1140)       normal       08/20/25 22:21             NA       No Diagnostic       Up
-10.1.2.3           476357661       2044274492           Ethernet2(1144)       normal       08/20/25 22:21             NA       No Diagnostic       Up
-10.1.2.5          2107959149       3063445977           Ethernet3(1146)       normal       08/20/25 22:21             NA       No Diagnostic       Up
-
 DstAddr                                MyDisc         YourDisc       Interface/Transport         Type               LastUp       LastDown            LastDiag    State
 ------------------------------- ---------------- ---------------- ------------------------- ------------ -------------------- -------------- ------------------- -----
-fe80::a8c1:abff:fe2a:bc56           755184907       3120229879           Ethernet3(1146)       normal       08/20/25 22:21             NA       No Diagnostic       Up
-fe80::a8c1:abff:fe45:5487          2205458108       3120229879           Ethernet1(1140)       normal       08/20/25 22:21             NA       No Diagnostic       Up
-fe80::a8c1:abff:feab:149e          1370192998       1612082641           Ethernet2(1144)       normal       08/20/25 22:21             NA       No Diagnostic       Up
+fe80::a8c1:abff:fe10:3ceb          2399755991       2604022487           Ethernet2(2171)       normal       08/27/25 15:16             NA       No Diagnostic       Up
+fe80::a8c1:abff:fe8b:1dd7           854137237       4290215108           Ethernet1(2169)       normal       08/27/25 15:16             NA       No Diagnostic       Up
+fe80::a8c1:abff:fee5:14ed          1230089738         45823714           Ethernet3(2179)       normal       08/27/25 15:16             NA       No Diagnostic       Up
+
+s2#show isis neighbors
+
+Instance  VRF      System Id        Type Interface          SNPA              State Hold time   Circuit Id
+netlab    default  l1               L2   Ethernet1          P2P               UP    28          00
+netlab    default  l2               L2   Ethernet2          P2P               UP    28          00
+netlab    default  l3               L2   Ethernet3          P2P               UP    29          00
+
+
+s2#show isis network topology
+
+IS-IS Instance: netlab VRF: default
+  IS-IS IPv4 paths to level-2 routers
+    System Id        Metric   IA Metric Next-Hop         Interface                SNPA
+    s1               20       0         l1               Ethernet1                P2P
+                                        l2               Ethernet2                P2P
+                                        l3               Ethernet3                P2P
+    l1               10       0         l1               Ethernet1                P2P
+    l2               10       0         l2               Ethernet2                P2P
+    l3               10       0         l3               Ethernet3                P2P
+  IS-IS IPv6 paths to level-2 routers
+    System Id        Metric   IA Metric Next-Hop         Interface                SNPA
+    s1               20       0         l1               Ethernet1                P2P
+                                        l2               Ethernet2                P2P
+                                        l3               Ethernet3                P2P
+    l1               10       0         l1               Ethernet1                P2P
+    l2               10       0         l2               Ethernet2                P2P
+    l3               10       0         l3               Ethernet3                P2P
 
 ```
 </details>
 
-### Проверяем пинг loopback всех устройств с leaf-1.
+### Проверяем пинг loopback всех устройств с leaf-3.
 
 <details>
-  <summary>leaf-1 pings </summary>
+  <summary>leaf-3 pings </summary>
 
   ```txt  
-l1# ping 192.168.2.2
-PING 192.168.2.2 (192.168.2.2): 56 data bytes
-64 bytes from 192.168.2.2: seq=0 ttl=63 time=0.813 ms
-64 bytes from 192.168.2.2: seq=1 ttl=63 time=0.961 ms
-64 bytes from 192.168.2.2: seq=2 ttl=63 time=0.964 ms
-64 bytes from 192.168.2.2: seq=3 ttl=63 time=0.932 ms
+l3# ping l1
+PING l1 (192.168.2.1): 56 data bytes
+64 bytes from 192.168.2.1: seq=0 ttl=63 time=1.610 ms
+64 bytes from 192.168.2.1: seq=1 ttl=63 time=0.901 ms
+64 bytes from 192.168.2.1: seq=2 ttl=63 time=0.808 ms
 ^C
---- 192.168.2.2 ping statistics ---
-4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.813/0.917/0.964 ms
-l1# ping 192.168.2.3
-PING 192.168.2.3 (192.168.2.3): 56 data bytes
-64 bytes from 192.168.2.3: seq=0 ttl=63 time=1.186 ms
-64 bytes from 192.168.2.3: seq=1 ttl=63 time=1.043 ms
-64 bytes from 192.168.2.3: seq=2 ttl=63 time=1.222 ms
-64 bytes from 192.168.2.3: seq=3 ttl=63 time=1.048 ms
-^C
---- 192.168.2.3 ping statistics ---
-4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 1.043/1.124/1.222 ms
-l1# ping 192.168.1.1
-PING 192.168.1.1 (192.168.1.1): 56 data bytes
-64 bytes from 192.168.1.1: seq=0 ttl=64 time=0.145 ms
-64 bytes from 192.168.1.1: seq=1 ttl=64 time=0.118 ms
-64 bytes from 192.168.1.1: seq=2 ttl=64 time=0.099 ms
-64 bytes from 192.168.1.1: seq=3 ttl=64 time=0.098 ms
-^C
---- 192.168.1.1 ping statistics ---
-4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.098/0.115/0.145 ms
-l1# ping 192.168.1.2
-PING 192.168.1.2 (192.168.1.2): 56 data bytes
-64 bytes from 192.168.1.2: seq=0 ttl=64 time=0.102 ms
-64 bytes from 192.168.1.2: seq=1 ttl=64 time=0.101 ms
-64 bytes from 192.168.1.2: seq=2 ttl=64 time=0.101 ms
-64 bytes from 192.168.1.2: seq=3 ttl=64 time=0.112 ms
-^C
---- 192.168.1.2 ping statistics ---
-4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.101/0.104/0.112 ms
-l1# ping ipv6 fd00::192:168:2:2
-PING fd00::192:168:2:2 (fd00::192:168:2:2): 56 data bytes
-64 bytes from fd00::192:168:2:2: seq=0 ttl=63 time=1.543 ms
-64 bytes from fd00::192:168:2:2: seq=1 ttl=63 time=0.781 ms
-64 bytes from fd00::192:168:2:2: seq=2 ttl=63 time=1.588 ms
-^C
---- fd00::192:168:2:2 ping statistics ---
+--- l1 ping statistics ---
 3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 0.781/1.304/1.588 ms
-l1# ping ipv6 fd00::192:168:2:3
-PING fd00::192:168:2:3 (fd00::192:168:2:3): 56 data bytes
-64 bytes from fd00::192:168:2:3: seq=0 ttl=63 time=1.360 ms
-64 bytes from fd00::192:168:2:3: seq=1 ttl=63 time=0.760 ms
-64 bytes from fd00::192:168:2:3: seq=2 ttl=63 time=0.913 ms
+round-trip min/avg/max = 0.808/1.106/1.610 ms
+l3# ping l2
+PING l2 (192.168.2.2): 56 data bytes
+64 bytes from 192.168.2.2: seq=0 ttl=63 time=1.253 ms
+64 bytes from 192.168.2.2: seq=1 ttl=63 time=0.875 ms
+64 bytes from 192.168.2.2: seq=2 ttl=63 time=0.850 ms
 ^C
---- fd00::192:168:2:3 ping statistics ---
+--- l2 ping statistics ---
 3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 0.760/1.011/1.360 ms
-l1# ping ipv6 fd00::192:168:1:1
-PING fd00::192:168:1:1 (fd00::192:168:1:1): 56 data bytes
-64 bytes from fd00::192:168:1:1: seq=0 ttl=64 time=0.096 ms
-64 bytes from fd00::192:168:1:1: seq=1 ttl=64 time=0.149 ms
-64 bytes from fd00::192:168:1:1: seq=2 ttl=64 time=0.101 ms
+round-trip min/avg/max = 0.850/0.992/1.253 ms
+l3# ping s1
+PING s1 (192.168.1.1): 56 data bytes
+64 bytes from 192.168.1.1: seq=0 ttl=64 time=0.074 ms
+64 bytes from 192.168.1.1: seq=1 ttl=64 time=0.098 ms
+64 bytes from 192.168.1.1: seq=2 ttl=64 time=0.095 ms
+64 bytes from 192.168.1.1: seq=3 ttl=64 time=0.092 ms
+64 bytes from 192.168.1.1: seq=4 ttl=64 time=0.115 ms
 ^C
---- fd00::192:168:1:1 ping statistics ---
+--- s1 ping statistics ---
+5 packets transmitted, 5 packets received, 0% packet loss
+round-trip min/avg/max = 0.074/0.094/0.115 ms
+l3# ping s2
+PING s2 (192.168.1.2): 56 data bytes
+64 bytes from 192.168.1.2: seq=0 ttl=64 time=0.103 ms
+64 bytes from 192.168.1.2: seq=1 ttl=64 time=0.094 ms
+64 bytes from 192.168.1.2: seq=2 ttl=64 time=0.173 ms
+64 bytes from 192.168.1.2: seq=3 ttl=64 time=0.106 ms
+64 bytes from 192.168.1.2: seq=4 ttl=64 time=0.111 ms
+^C
+--- s2 ping statistics ---
+5 packets transmitted, 5 packets received, 0% packet loss
+round-trip min/avg/max = 0.094/0.117/0.173 ms
+
+l3# ping ipv6 l1
+PING l1 (fd00::192:168:2:1): 56 data bytes
+64 bytes from fd00::192:168:2:1: seq=0 ttl=63 time=1.274 ms
+64 bytes from fd00::192:168:2:1: seq=1 ttl=63 time=1.009 ms
+64 bytes from fd00::192:168:2:1: seq=2 ttl=63 time=0.636 ms
+^C
+--- l1 ping statistics ---
 3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 0.096/0.115/0.149 ms
-l1# ping ipv6 fd00::192:168:1:2
-PING fd00::192:168:1:2 (fd00::192:168:1:2): 56 data bytes
-64 bytes from fd00::192:168:1:2: seq=0 ttl=64 time=0.111 ms
-64 bytes from fd00::192:168:1:2: seq=1 ttl=64 time=0.128 ms
-64 bytes from fd00::192:168:1:2: seq=2 ttl=64 time=0.116 ms
-64 bytes from fd00::192:168:1:2: seq=3 ttl=64 time=0.097 ms
+round-trip min/avg/max = 0.636/0.973/1.274 ms
+l3# ping ipv6 l2
+PING l2 (fd00::192:168:2:2): 56 data bytes
+64 bytes from fd00::192:168:2:2: seq=0 ttl=63 time=1.395 ms
+64 bytes from fd00::192:168:2:2: seq=1 ttl=63 time=1.001 ms
+64 bytes from fd00::192:168:2:2: seq=2 ttl=63 time=1.386 ms
 ^C
---- fd00::192:168:1:2 ping statistics ---
+--- l2 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 1.001/1.260/1.395 ms
+l3# ping ipv6 s1
+PING s1 (fd00::192:168:1:1): 56 data bytes
+64 bytes from fd00::192:168:1:1: seq=0 ttl=64 time=0.140 ms
+64 bytes from fd00::192:168:1:1: seq=1 ttl=64 time=0.115 ms
+64 bytes from fd00::192:168:1:1: seq=2 ttl=64 time=0.096 ms
+^C
+--- s1 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.096/0.117/0.140 ms
+l3# ping ipv6 s2
+PING s2 (fd00::192:168:1:2): 56 data bytes
+64 bytes from fd00::192:168:1:2: seq=0 ttl=64 time=0.105 ms
+64 bytes from fd00::192:168:1:2: seq=1 ttl=64 time=0.098 ms
+64 bytes from fd00::192:168:1:2: seq=2 ttl=64 time=0.202 ms
+64 bytes from fd00::192:168:1:2: seq=3 ttl=64 time=0.090 ms
+^C
+--- s2 ping statistics ---
 4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.097/0.113/0.128 ms
+round-trip min/avg/max = 0.090/0.123/0.202 ms
 
 ```
 </details>
 
 Конфигурационные файлы устройств:  
-![Leaf-1](./l1.conf)
-![Leaf-2](./l2.conf)
-![Leaf-3](./l3.conf)
-![Spine-1](./s1.conf)
-![Spine-2](./s2.conf)
+![Leaf-1](./l1.cfg)
+![Leaf-2](./l2.cfg)
+![Leaf-3](./l3.cfg)
+![Spine-1](./s1.cfg)
+![Spine-2](./s2.cfg)
 
