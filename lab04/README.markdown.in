@@ -1,8 +1,3 @@
-\documentclass{article}
-\usepackage{markdown}
-\begin{document}
-
-\begin{markdown}
 
 ### Задание Underlay. BGP
 
@@ -56,7 +51,7 @@ loopback
 | Leaf-3   | 192.168.2.3 | fd00::192:168:2:3 |
 
 Номера AS выдаем по принципу spine 65000 leaf 6500x, где x - номер leaf
-Таблица net 
+Таблица net
 | Device  | AS number  |
 |---------|---------|
 | Spine-1 | 65000   |
@@ -70,19 +65,19 @@ loopback
 Когда поднимем overlay засунем все в одну подсеть чтобы эмулировать l2. Из маршрутизации интерфейсы к которым подключены хосты убираем.
 
 ### Запуск лабараторной в среде netlab
-Заметки по использованию netlab:  
+Заметки по использованию netlab:
 Как мы знаем из более ранних попыток есть вопросы с запуском bfd из файла первичной конфигурации, поэтому пришлось:
 1) Поправить модуль /usr/local/lib/python3.10/dist-packages/netsim/modules/bgp.yml добавив в секцию node параметр bfd
 <details>
   <summary>bgp.yml</summary>
-  
-  ```txt  
+
+  ```txt
   node:
     bfd: bool
-  
+
   interface:
     bfd: bool
-    
+
 ```
 </details>
 
@@ -90,33 +85,33 @@ loopback
 2) Добавить в макросы  /usr/local/lib/python3.10/dist-packages/netsim/ansible/templates/bgp/eos.macro.j2  /usr/local/lib/python3.10/dist-packages/netsim/ansible/templates/bgp/frr.j2 обработчик параметров bfd
 <details>
   <summary>add to eos.macro.j2</summary>
-  
-  ```txt  
+
+  ```txt
   В секцию  Define a BGP neighbor добавляем
 
 
 {%   if bgp.bfd|default(False) %}
   neighbor {{ peer }} bfd
 {%   endif %}
-    
+
 ```
 </details>
 
 <details>
   <summary>add to frr.j2</summary>
-  
-  ```txt  
+
+  ```txt
   В секцию  Create neighbors добавляем
 
 
 {%   if bgp.bfd|default(False) %}
   neighbor {{ peer }} bfd
 {%   endif %}
-    
+
 ```
 </details>
 
-А после всех этих манипуляций понять, что читать документацию надо внимательно и обнаружить плагин bgp.session, который не только bfd включит, но и в полной мере может управлять создаваемыми сессиями. 
+А после всех этих манипуляций понять, что читать документацию надо внимательно и обнаружить плагин bgp.session, который не только bfd включит, но и в полной мере может управлять создаваемыми сессиями.
 По ходу чтения документации нашел встраиваемый инструмент edgeshark, позволяющий снифать трафик, получать маршрутную информацию, отслеживать линки с инстансов netlab. Его крутые возможности приведу в скринах ниже. Включается она 2мя строками.
 ```
 tools:
@@ -343,8 +338,8 @@ links:
 
 <details>
   <summary>spine-1</summary>
-  
-  ```txt  
+
+  ```txt
 s1#show ip ro
 
 VRF: default
@@ -407,11 +402,11 @@ VRF: default
 s1#show bfd peers
 VRF name: default
 -----------------
-DstAddr       MyDisc    YourDisc  Interface/Transport    Type           LastUp 
+DstAddr       MyDisc    YourDisc  Interface/Transport    Type           LastUp
 --------- ----------- ----------- -------------------- ------- ----------------
-10.1.1.1  2581780435  2824933366      Ethernet1(2718)  normal   09/16/25 15:37 
-10.1.1.3  3732559854  1902154705      Ethernet2(2734)  normal   09/16/25 15:37 
-10.1.1.5  4234480148   127838387      Ethernet3(2732)  normal   09/16/25 15:37 
+10.1.1.1  2581780435  2824933366      Ethernet1(2718)  normal   09/16/25 15:37
+10.1.1.3  3732559854  1902154705      Ethernet2(2734)  normal   09/16/25 15:37
+10.1.1.5  4234480148   127838387      Ethernet3(2732)  normal   09/16/25 15:37
 
    LastDown            LastDiag    State
 -------------- ------------------- -----
@@ -419,11 +414,11 @@ DstAddr       MyDisc    YourDisc  Interface/Transport    Type           LastUp
          NA       No Diagnostic       Up
          NA       No Diagnostic       Up
 
-DstAddr            MyDisc   YourDisc Interface/Transport   Type         LastUp 
+DstAddr            MyDisc   YourDisc Interface/Transport   Type         LastUp
 -------------- ---------- ---------- ------------------- ------ ---------------
-fd00::10:1:1:1 1652262492 2803604608     Ethernet1(2718) normal 09/16/25 15:37 
-fd00::10:1:1:3 1815725452 2843362118     Ethernet2(2734) normal 09/16/25 15:37 
-fd00::10:1:1:5 2833241770  802033556     Ethernet3(2732) normal 09/16/25 15:37 
+fd00::10:1:1:1 1652262492 2803604608     Ethernet1(2718) normal 09/16/25 15:37
+fd00::10:1:1:3 1815725452 2843362118     Ethernet2(2734) normal 09/16/25 15:37
+fd00::10:1:1:5 2833241770  802033556     Ethernet3(2732) normal 09/16/25 15:37
 
    LastDown            LastDiag    State
 -------------- ------------------- -----
@@ -437,7 +432,7 @@ fd00::10:1:1:5 2833241770  802033556     Ethernet3(2732) normal 09/16/25 15:37
 <details>
   <summary>spine-2 </summary>
 
-  ```txt  
+  ```txt
 
 s2#show ip ro
 
@@ -497,11 +492,11 @@ VRF: default
 s2#show bfd peers
 VRF name: default
 -----------------
-DstAddr       MyDisc    YourDisc  Interface/Transport    Type           LastUp 
+DstAddr       MyDisc    YourDisc  Interface/Transport    Type           LastUp
 --------- ----------- ----------- -------------------- ------- ----------------
-10.1.2.1  2769141842   416998736      Ethernet1(2717)  normal   09/16/25 15:37 
-10.1.2.3  1190010339  4031563154      Ethernet2(2721)  normal   09/16/25 15:37 
-10.1.2.5   405007780  3992401038      Ethernet3(2727)  normal   09/16/25 15:37 
+10.1.2.1  2769141842   416998736      Ethernet1(2717)  normal   09/16/25 15:37
+10.1.2.3  1190010339  4031563154      Ethernet2(2721)  normal   09/16/25 15:37
+10.1.2.5   405007780  3992401038      Ethernet3(2727)  normal   09/16/25 15:37
 
    LastDown            LastDiag    State
 -------------- ------------------- -----
@@ -509,11 +504,11 @@ DstAddr       MyDisc    YourDisc  Interface/Transport    Type           LastUp
          NA       No Diagnostic       Up
          NA       No Diagnostic       Up
 
-DstAddr            MyDisc   YourDisc Interface/Transport   Type         LastUp 
+DstAddr            MyDisc   YourDisc Interface/Transport   Type         LastUp
 -------------- ---------- ---------- ------------------- ------ ---------------
-fd00::10:1:2:1  356403669  198425777     Ethernet1(2717) normal 09/16/25 15:37 
-fd00::10:1:2:3 3312820639 2830340384     Ethernet2(2721) normal 09/16/25 15:37 
-fd00::10:1:2:5 2589451238 1692913741     Ethernet3(2727) normal 09/16/25 15:37 
+fd00::10:1:2:1  356403669  198425777     Ethernet1(2717) normal 09/16/25 15:37
+fd00::10:1:2:3 3312820639 2830340384     Ethernet2(2721) normal 09/16/25 15:37
+fd00::10:1:2:5 2589451238 1692913741     Ethernet3(2727) normal 09/16/25 15:37
 
    LastDown            LastDiag    State
 -------------- ------------------- -----
@@ -523,7 +518,7 @@ fd00::10:1:2:5 2589451238 1692913741     Ethernet3(2727) normal 09/16/25 15:37
 
 
 
-s2#show bgp neighbors 
+s2#show bgp neighbors
 
 BGP neighbor is 10.1.2.1, remote AS 65001, external link
  Description: l1
@@ -566,7 +561,7 @@ BGP neighbor is 10.1.2.1, remote AS 65001, external link
       Restart-State bit: yes
       Graceful notification: yes
     Long Lived Graceful Restart received:
-      IPv4 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se conds
+      IPv4 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se ^^Hconds
   Restart timer is inactive
   End of rib timer is inactive
     IPv4 Unicast End-of-RIB received: Yes
@@ -592,10 +587,10 @@ BGP neighbor is 10.1.2.1, remote AS 65001, external link
     End of Route Refresh:            0         0
     Total messages:                278       240
   Prefix Statistics:
-                                   Sent      Rcvd     Best Paths     Best ECMP P 
+                                   Sent      Rcvd     Best Paths     Best ECMP P ^^H
 aths
-    IPv4 Unicast:                     6         2              2                    0
-    IPv6 Unicast:                     0         0              0                    0
+    IPv4 Unicast:                     6         2              2                 ^^H   0
+    IPv6 Unicast:                     0         0              0                 ^^H   0
   Configured maximum total number of routes is 256000, warning limit is 204800
   Inbound updates dropped by reason:
     AS path loop detection: 4
@@ -625,7 +620,7 @@ aths
     L2VPN EVPN NLRIs dropped due to route import match failure: 0
     L2VPN EVPN NLRIs dropped due to unsupported route type: 0
     Link-state NLRIs dropped because reception is unsupported: 0
-    RT Membership NLRIs dropped due to local origin ASN received from external p eer: 0
+    RT Membership NLRIs dropped due to local origin ASN received from external p ^^Heer: 0
   Outbound paths dropped by reason:
     IPv4 local address not available: 0
     IPv6 local address not available: 0
@@ -636,7 +631,7 @@ Remote TCP address is 10.1.2.1, remote port is 41916
 Local next hop for next hop self:
   IPv4 Unicast: 10.1.2.0
 BFD is enabled and state is Up
-! Sending extended community not configured, updates will be sent without extend ed communities or route targets
+! Sending extended community not configured, updates will be sent without extend ^^Hed communities or route targets
 TCP Socket Information:
   TCP state is ESTABLISHED
   Recv-Q: 0/32768
@@ -675,7 +670,7 @@ BGP neighbor is 10.1.2.3, remote AS 65002, external link
   Last event was RecvUpdate
   Last sent notification:Cease/administrative reset, Last time 00:11:05
   Last rcvd notification:Cease/administrative reset, Last time 00:11:02
-  Last rcvd socket-error:Connection reset by peer, Last time 00:11:05, First tim e 00:11:09, Repeats 1
+  Last rcvd socket-error:Connection reset by peer, Last time 00:11:05, First tim ^^He 00:11:09, Repeats 1
   Types of communities advertised: standard large
   Enhanced route refresh stale path removal disabled
   Outbound enhanced route refresh enabled
@@ -698,7 +693,7 @@ BGP neighbor is 10.1.2.3, remote AS 65002, external link
       Restart-State bit: yes
       Graceful notification: yes
     Long Lived Graceful Restart received:
-      IPv4 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se conds
+      IPv4 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se ^^Hconds
   Restart timer is inactive
   End of rib timer is inactive
     IPv4 Unicast End-of-RIB received: Yes
@@ -724,10 +719,10 @@ BGP neighbor is 10.1.2.3, remote AS 65002, external link
     End of Route Refresh:            0         0
     Total messages:                278       240
   Prefix Statistics:
-                                   Sent      Rcvd     Best Paths     Best ECMP P 
+                                   Sent      Rcvd     Best Paths     Best ECMP P ^^H
 aths
-    IPv4 Unicast:                     6         2              2                    0
-    IPv6 Unicast:                     0         0              0                    0
+    IPv4 Unicast:                     6         2              2                 ^^H   0
+    IPv6 Unicast:                     0         0              0                 ^^H   0
   Configured maximum total number of routes is 256000, warning limit is 204800
   Inbound updates dropped by reason:
     AS path loop detection: 4
@@ -757,7 +752,7 @@ aths
     L2VPN EVPN NLRIs dropped due to route import match failure: 0
     L2VPN EVPN NLRIs dropped due to unsupported route type: 0
     Link-state NLRIs dropped because reception is unsupported: 0
-    RT Membership NLRIs dropped due to local origin ASN received from external p eer: 0
+    RT Membership NLRIs dropped due to local origin ASN received from external p ^^Heer: 0
   Outbound paths dropped by reason:
     IPv4 local address not available: 0
     IPv6 local address not available: 0
@@ -768,7 +763,7 @@ Remote TCP address is 10.1.2.3, remote port is 38026
 Local next hop for next hop self:
   IPv4 Unicast: 10.1.2.2
 BFD is enabled and state is Up
-! Sending extended community not configured, updates will be sent without extend ed communities or route targets
+! Sending extended community not configured, updates will be sent without extend ^^Hed communities or route targets
 TCP Socket Information:
   TCP state is ESTABLISHED
   Recv-Q: 0/32768
@@ -830,7 +825,7 @@ BGP neighbor is 10.1.2.5, remote AS 65003, external link
       Restart-State bit: yes
       Graceful notification: yes
     Long Lived Graceful Restart received:
-      IPv4 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se conds
+      IPv4 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se ^^Hconds
   Restart timer is inactive
   End of rib timer is inactive
     IPv4 Unicast End-of-RIB received: Yes
@@ -856,9 +851,9 @@ BGP neighbor is 10.1.2.5, remote AS 65003, external link
     End of Route Refresh:            0         0
     Total messages:                278       240
   Prefix Statistics:
-                                   Sent      Rcvd     Best Paths     Best ECMP P aths
-    IPv4 Unicast:                     5         3              3                    0
-    IPv6 Unicast:                     0         0              0                    0
+                                   Sent      Rcvd     Best Paths     Best ECMP P ^^Haths
+    IPv4 Unicast:                     5         3              3                 ^^H   0
+    IPv6 Unicast:                     0         0              0                 ^^H   0
   Configured maximum total number of routes is 256000, warning limit is 204800
   Inbound updates dropped by reason:
     AS path loop detection: 4
@@ -888,7 +883,7 @@ BGP neighbor is 10.1.2.5, remote AS 65003, external link
     L2VPN EVPN NLRIs dropped due to route import match failure: 0
     L2VPN EVPN NLRIs dropped due to unsupported route type: 0
     Link-state NLRIs dropped because reception is unsupported: 0
-    RT Membership NLRIs dropped due to local origin ASN received from external p eer: 0
+    RT Membership NLRIs dropped due to local origin ASN received from external p ^^Heer: 0
   Outbound paths dropped by reason:
     IPv4 local address not available: 0
     IPv6 local address not available: 0
@@ -899,7 +894,7 @@ Remote TCP address is 10.1.2.5, remote port is 35588
 Local next hop for next hop self:
   IPv4 Unicast: 10.1.2.4
 BFD is enabled and state is Up
-! Sending extended community not configured, updates will be sent without extend  
+! Sending extended community not configured, updates will be sent without extend ^^H
 ed communities or route targets
 TCP Socket Information:
   TCP state is ESTABLISHED
@@ -961,7 +956,7 @@ BGP neighbor is fd00::10:1:2:1, remote AS 65001, external link
       Restart-State bit: yes
       Graceful notification: yes
     Long Lived Graceful Restart received:
-      IPv6 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se conds
+      IPv6 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se ^^Hconds
   Restart timer is inactive
   End of rib timer is inactive
     IPv6 Unicast End-of-RIB received: Yes
@@ -987,9 +982,9 @@ BGP neighbor is fd00::10:1:2:1, remote AS 65001, external link
     End of Route Refresh:            0         0
     Total messages:                279       240
   Prefix Statistics:
-                                   Sent      Rcvd     Best Paths     Best ECMP P aths
-    IPv4 Unicast:                     0         0              0                    0
-    IPv6 Unicast:                     6         2              2                    0
+                                   Sent      Rcvd     Best Paths     Best ECMP P ^^Haths
+    IPv4 Unicast:                     0         0              0                 ^^H   0
+    IPv6 Unicast:                     6         2              2                 ^^H   0
   Configured maximum total number of routes is 256000, warning limit is 204800
   Inbound updates dropped by reason:
     AS path loop detection: 4
@@ -1019,7 +1014,7 @@ BGP neighbor is fd00::10:1:2:1, remote AS 65001, external link
     L2VPN EVPN NLRIs dropped due to route import match failure: 0
     L2VPN EVPN NLRIs dropped due to unsupported route type: 0
     Link-state NLRIs dropped because reception is unsupported: 0
-    RT Membership NLRIs dropped due to local origin ASN received from external p eer: 0
+    RT Membership NLRIs dropped due to local origin ASN received from external p ^^Heer: 0
   Outbound paths dropped by reason:
     IPv4 local address not available: 0
     IPv6 local address not available: 0
@@ -1030,7 +1025,7 @@ Remote TCP address is fd00::10:1:2:1, remote port is 51794
 Local next hop for next hop self:
   IPv6 Unicast: fd00::10:1:2:0
 BFD is enabled and state is Up
-! Sending extended community not configured, updates will be sent without extend ed communities or route targets
+! Sending extended community not configured, updates will be sent without extend ^^Hed communities or route targets
 TCP Socket Information:
   TCP state is ESTABLISHED
   Recv-Q: 0/32768
@@ -1092,7 +1087,7 @@ BGP neighbor is fd00::10:1:2:3, remote AS 65002, external link
       Restart-State bit: yes
       Graceful notification: yes
     Long Lived Graceful Restart received:
-      IPv6 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se conds
+      IPv6 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se ^^Hconds
   Restart timer is inactive
   End of rib timer is inactive
     IPv6 Unicast End-of-RIB received: Yes
@@ -1118,9 +1113,9 @@ BGP neighbor is fd00::10:1:2:3, remote AS 65002, external link
     End of Route Refresh:            0         0
     Total messages:                279       239
   Prefix Statistics:
-                                   Sent      Rcvd     Best Paths     Best ECMP P aths
-    IPv4 Unicast:                     0         0              0                    0
-    IPv6 Unicast:                     6         2              2                  --More-- 
+                                   Sent      Rcvd     Best Paths     Best ECMP P ^^Haths
+    IPv4 Unicast:                     0         0              0                 ^^H   0
+    IPv6 Unicast:                     6         2              2                 ^^H --More--
    0
   Configured maximum total number of routes is 256000, warning limit is 204800
   Inbound updates dropped by reason:
@@ -1151,7 +1146,7 @@ BGP neighbor is fd00::10:1:2:3, remote AS 65002, external link
     L2VPN EVPN NLRIs dropped due to route import match failure: 0
     L2VPN EVPN NLRIs dropped due to unsupported route type: 0
     Link-state NLRIs dropped because reception is unsupported: 0
-    RT Membership NLRIs dropped due to local origin ASN received from external p eer: 0
+    RT Membership NLRIs dropped due to local origin ASN received from external p ^^Heer: 0
   Outbound paths dropped by reason:
     IPv4 local address not available: 0
     IPv6 local address not available: 0
@@ -1162,7 +1157,7 @@ Remote TCP address is fd00::10:1:2:3, remote port is 58480
 Local next hop for next hop self:
   IPv6 Unicast: fd00::10:1:2:2
 BFD is enabled and state is Up
-! Sending extended community not configured, updates will be sent without extend ed communities or route targets
+! Sending extended community not configured, updates will be sent without extend ^^Hed communities or route targets
 TCP Socket Information:
   TCP state is ESTABLISHED
   Recv-Q: 0/32768
@@ -1224,7 +1219,7 @@ BGP neighbor is fd00::10:1:2:5, remote AS 65003, external link
       Restart-State bit: yes
       Graceful notification: yes
     Long Lived Graceful Restart received:
-      IPv6 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se conds
+      IPv6 Unicast is enabled, Forwarding State is preserved, Stale time is 0 se ^^Hconds
   Restart timer is inactive
   End of rib timer is inactive
     IPv6 Unicast End-of-RIB received: Yes
@@ -1250,9 +1245,9 @@ BGP neighbor is fd00::10:1:2:5, remote AS 65003, external link
     End of Route Refresh:            0         0
     Total messages:                279       240
   Prefix Statistics:
-                                   Sent      Rcvd     Best Paths     Best ECMP P aths
-    IPv4 Unicast:                     0         0              0                    0
-    IPv6 Unicast:                     5         3              3                    0
+                                   Sent      Rcvd     Best Paths     Best ECMP P ^^Haths
+    IPv4 Unicast:                     0         0              0                 ^^H   0
+    IPv6 Unicast:                     5         3              3                 ^^H   0
   Configured maximum total number of routes is 256000, warning limit is 204800
   Inbound updates dropped by reason:
     AS path loop detection: 4
@@ -1282,7 +1277,7 @@ BGP neighbor is fd00::10:1:2:5, remote AS 65003, external link
     L2VPN EVPN NLRIs dropped due to route import match failure: 0
     L2VPN EVPN NLRIs dropped due to unsupported route type: 0
     Link-state NLRIs dropped because reception is unsupported: 0
-    RT Membership NLRIs dropped due to local origin ASN received from external p eer: 0
+    RT Membership NLRIs dropped due to local origin ASN received from external p ^^Heer: 0
   Outbound paths dropped by reason:
     IPv4 local address not available: 0
     IPv6 local address not available: 0
@@ -1293,7 +1288,7 @@ Remote TCP address is fd00::10:1:2:5, remote port is 41726
 Local next hop for next hop self:
   IPv6 Unicast: fd00::10:1:2:4
 BFD is enabled and state is Up
-! Sending extended community not configured, updates will be sent without extend ed communities or route targets
+! Sending extended community not configured, updates will be sent without extend ^^Hed communities or route targets
 TCP Socket Information:
   TCP state is ESTABLISHED
   Recv-Q: 0/32768
@@ -1350,12 +1345,12 @@ PING 192.168.2.3 (192.168.2.3): 56 data bytes
 ![edgeshark-lab04.png](edgeshark-lab04.png)
 Он нам не только позволяет видеть простыню подключений, но и снимать трафик
 ![ping-l2-1st-try.png](ping-l2-1st-try.png)
-Видим что у нас соурс адрес подставляет интерфейс. Request доходит до целевого хоста, а вот reply сформироваться не может, так как leaf ничего не знает о том как другие leaf подключены к spine. Только лупбеки, можно или явно добавить в анонс сети в bgp на оборудовании. Напрямую указывать в frr соурс адрес из оболочки vtysh нельзя, поэтому делаем пинг из системы. 
+Видим что у нас соурс адрес подставляет интерфейс. Request доходит до целевого хоста, а вот reply сформироваться не может, так как leaf ничего не знает о том как другие leaf подключены к spine. Только лупбеки, можно или явно добавить в анонс сети в bgp на оборудовании. Напрямую указывать в frr соурс адрес из оболочки vtysh нельзя, поэтому делаем пинг из системы.
 
 <details>
   <summary>leaf-2 pings 2nd try </summary>
-  
-  ```txt  
+
+  ```txt
 l2(bash)# ping -I 192.168.2.2 l1
 PING l1 (192.168.2.1) from 192.168.2.2: 56 data bytes
 64 bytes from 192.168.2.1: seq=0 ttl=63 time=1.242 ms
@@ -1433,13 +1428,10 @@ round-trip min/avg/max = 0.095/0.113/0.123 ms
 ```
 </details>
 
-Конфигурационные файлы устройств:  
+Конфигурационные файлы устройств:
 ![Leaf-1](./l1.cfg)
 ![Leaf-2](./l2.cfg)
 ![Leaf-3](./l3.cfg)
 ![Spine-1](./s1.cfg)
 ![Spine-2](./s2.cfg)
 
-\end{markdown}
-
-\end{document}
