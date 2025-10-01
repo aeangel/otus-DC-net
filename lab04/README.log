@@ -225,4 +225,101 @@ File: pdftex.def 2024/04/13 v1.2c Graphics/color driver for pdftex
 \Gin@req@width=\dimen154
 )
 (/usr/local/texlive/2025/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
-Package: ltxcmds 2023-12-04 v1.2
+Package: ltxcmds 2023-12-04 v1.26 LaTeX kernel commands for general use (HO)
+)
+\markdownLaTeXCitationsCounter=\count292
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/url/url.sty
+\Urlmuskip=\muskip18
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+\markdownLaTeXRowCounter=\count293
+\markdownLaTeXRowTotal=\count294
+\markdownLaTeXColumnCounter=\count295
+\markdownLaTeXColumnTotal=\count296
+\markdownLaTeXTable=\toks28
+\markdownLaTeXTableAlignment=\toks29
+\markdownLaTeXTableEnd=\toks30
+)
+No file README.aux.
+\openout1 = `README.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 3.
+LaTeX Font Info:    ... okay on input line 3.
+(/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count297
+\scratchdimen=\dimen155
+\scratchbox=\box57
+\nofMPsegments=\count298
+\nofMParguments=\count299
+\everyMPshowfont=\toks31
+\MPscratchCnt=\count300
+\MPscratchDim=\dimen156
+\MPnumerator=\count301
+\makeMPintoPDFobject=\count302
+\everyMPtoPDFconversion=\toks32
+) (/usr/local/texlive/2025/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(/usr/local/texlive/2025/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+\openout3 = `README.markdown.in'.
+
+
+Package markdown Info: Buffering block-level markdown input into the temporary
+(markdown)             input file "README.markdown.in" and scanning for the
+(markdown)             closing token sequence "\end{markdown}"
+
+
+Package markdown Info: The ending token sequence was found
+
+
+Package markdown Info: Including markdown document "./README.markdown.in"
+
+
+
+./README.md:1443: Package markdown Error: Shell escape is restricted
+
+For immediate help type H <return>.
+ ...                                              
+                                                  
+l.1443 \end{markdown}
+                     
+? 
+./README.md:1443: Emergency stop.
+ ...                                              
+                                                  
+l.1443 \end{markdown}
+                     
+
+You may need to run TeX with the --shell-escape or the --enable-write18 flag,
+or write shell_escape=t in the texmf.cnf file.
+
+
+ 
+Here is how much of TeX's memory you used:
+ 6301 strings out of 473190
+ 140697 string characters out of 5715801
+ 523106 words of memory out of 5000000
+ 29501 multiletter control sequences out of 15000+600000
+ 558837 words of font info for 36 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 99i,1n,123p,676b,360s stack positions out of 10000i,1000n,20000p,200000b,200000s
+./README.md:1443:  ==> Fatal error occurred, no output PDF file produced!
