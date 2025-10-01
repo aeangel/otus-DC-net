@@ -69,7 +69,7 @@ loopback
 
   ```yml
 
-  ---
+ ---
 provider: clab
 module: [ vlan,vxlan,ospf,bgp,evpn,bfd ]
 plugin: [ bgp.session ]
@@ -286,4 +286,74 @@ links:
      ```
 </details>
 
+## Проверка работы
+
+Какой конечный результат мы хотели? связность между h1 и h3, h2 и h4 соответственно. И чтобы через vxlan.
+Стартуем и смотрим на пинги
+<details>
+  <summary>h1 pings </summary>
   
+  ```txt  
+lh1:/# ping h3
+PING h3 (172.16.1.13): 56 data bytes
+64 bytes from 172.16.1.13: seq=0 ttl=64 time=0.786 ms
+64 bytes from 172.16.1.13: seq=1 ttl=64 time=0.965 ms
+64 bytes from 172.16.1.13: seq=2 ttl=64 time=0.914 ms
+64 bytes from 172.16.1.13: seq=3 ttl=64 time=0.975 ms
+^C
+--- h3 ping statistics ---
+4 packets transmitted, 4 packets received, 0% packet loss
+round-trip min/avg/max = 0.786/0.910/0.975 ms
+h1:/# ping6 h3
+PING h3 (fd00::172:16:1:d): 56 data bytes
+64 bytes from fd00::172:16:1:d: seq=0 ttl=64 time=1.686 ms
+64 bytes from fd00::172:16:1:d: seq=1 ttl=64 time=0.852 ms
+64 bytes from fd00::172:16:1:d: seq=2 ttl=64 time=0.905 ms
+64 bytes from fd00::172:16:1:d: seq=3 ttl=64 time=1.057 ms
+x64 bytes from fd00::172:16:1:d: seq=4 ttl=64 time=0.860 ms
+^C
+--- h3 ping statistics ---
+5 packets transmitted, 5 packets received, 0% packet loss
+round-trip min/avg/max = 0.852/1.072/1.686 ms
+
+```
+</details>
+
+<details>
+  <summary>h4 pings </summary>
+  
+  ```txt  
+h4:/# ping h2
+PING h2 (172.16.2.12): 56 data bytes
+64 bytes from 172.16.2.12: seq=0 ttl=64 time=1.647 ms
+64 bytes from 172.16.2.12: seq=1 ttl=64 time=0.915 ms
+64 bytes from 172.16.2.12: seq=2 ttl=64 time=0.883 ms
+64 bytes from 172.16.2.12: seq=3 ttl=64 time=0.848 ms
+64 bytes from 172.16.2.12: seq=4 ttl=64 time=0.971 ms
+^C
+--- h2 ping statistics ---
+5 packets transmitted, 5 packets received, 0% packet loss
+round-trip min/avg/max = 0.848/1.052/1.647 ms
+h4:/# ping6 h2
+PING h2 (fd00::172:16:2:c): 56 data bytes
+64 bytes from fd00::172:16:2:c: seq=0 ttl=64 time=1.910 ms
+64 bytes from fd00::172:16:2:c: seq=1 ttl=64 time=0.982 ms
+64 bytes from fd00::172:16:2:c: seq=2 ttl=64 time=1.177 ms
+64 bytes from fd00::172:16:2:c: seq=3 ttl=64 time=1.105 ms
+64 bytes from fd00::172:16:2:c: seq=4 ttl=64 time=1.021 ms
+^C
+--- h2 ping statistics ---
+5 packets transmitted, 5 packets received, 0% packet loss
+round-trip min/avg/max = 0.982/1.239/1.910 ms
+
+```
+</details>
+
+Пинги между хостами побежали, значит можно посмотреть что происходит у нас на leaf и spine, какие есть маршруты и прочее.
+Учитывая что у нас поднялся evpn и по ipv4 и по ipv6 будет весело но для понимания введем таблицу mac для устройств
+|Host| MAC                | ipv4           | ipv6                 | ipv6 local                   | vlan  | vni     |
+| h1 | aa:c1:ab:0d:85:f0  | 172.16.1.11/24 | fd00::172:16:1:b/116 | fe80::a8c1:abff:fe0d:85f0/64 | red   | 101000  |
+| h2 | aa:c1:ab:a5:c3:48  | 172.16.2.12/24 | fd00::172:16:2:c/116 | fe80::a8c1:abff:fea5:c348/64 | blue  | 101001  |
+| h3 | aa:c1:ab:cb:d4:25  | 172.16.1.13/24 | fd00::172:16:1:d/116 | fe80::a8c1:abff:fecb:d425/64 | red   | 101000  |
+| h4 | aa:c1:ab:60:b1:45  | 172.16.2.14/24 | fd00::172:16:2:e/116 | fe80::a8c1:abff:fe60:b145/64 | blue  | 101001  |
+
