@@ -1,0 +1,118 @@
+# BGP default settings and attributes
+#
+---
+ebgp_role: external
+advertise_roles: [ stub ]
+advertise_loopback: True
+community:
+  ibgp: [ standard, extended ]
+  ebgp: [ standard ]
+no_propagate:
+  ebgp_role:
+  advertise_roles:
+  rr_list:
+  as_list:
+  confederation:
+transform_after: [ vlan ]
+config_after: [ routing, ospf, isis, eigrp, ripv2 ]
+next_hop_self: true
+hooks: [ normalize ]
+
+_top:                         # Define custom data types used by the BGP module
+  attributes:
+    bgp_session_type:
+      _description: BGP session types
+      type: str
+      valid_values:           # Valid values are structured like a dict to allow plugins to add values
+        ibgp:
+        ebgp:
+        localas_ibgp:
+
+attributes:
+  global:
+    as: asn
+    next_hop_self: bool
+    rr_cluster_id: { type: ipv4, use: id }
+    rr_list: list
+    rr_mesh: bool  #add mesh between rr
+    ebgp_role: str
+    as_list: dict
+    sessions:
+      ipv4: { type: list, _subtype: bgp_session_type }
+      ipv6: { type: list, _subtype: bgp_session_type }
+    activate:
+      ipv4: { type: list, _subtype: bgp_session_type }
+      ipv6: { type: list, _subtype: bgp_session_type }
+    advertise_loopback: bool
+    advertise_roles: list
+    community:
+      ibgp: [ standard, extended, large, 2octet ]
+      ebgp: [ standard, extended, large, 2octet ]
+      _alt_types: [ str, BoxList ]
+    replace_global_as: bool
+    confederation:
+      type: dict
+      _keytype: asn
+      _subtype:
+        members:
+          type: list
+          _subtype: asn
+
+  _inherit_community:                 # This is a lookup table for rare session types so you don't
+    localas_ibgp: ibgp                # have to specify them in bgp.community attribute
+    confed_ebgp: ibgp
+
+  node:
+    as:
+      type: asn
+      _required: True
+    next_hop_self:
+    rr: bool
+    rr_cluster_id:
+    rr_mesh:                    #add rr_mesh
+    originate:
+      type: list
+      _subtype: { type: ipv4, use: subnet_prefix, named: True }
+    advertise_loopback:
+    sessions:
+    activate:
+    community:
+    router_id: { type: ipv4, use: id }
+    local_as: asn
+    replace_global_as: bool
+    import: _r_import
+#    bfd: bool use in bgp.sessions module
+  vrf:
+    router_id: { type: ipv4, use: id }
+    import: _r_import
+  node_copy: [ local_as, replace_global_as ]
+  link:
+    advertise: { type: bool, _intra_as: True }
+  interface:
+    local_as: asn
+    replace_global_as: bool
+#    bfd: bool use in bgp.sessions module
+  as_list:
+    type: dict
+    _keytype: int
+    _subtype:
+      members:
+        type: list
+        _subtype: node_id
+        _required: True
+      rr:
+        type: list
+        _subtype: node_id
+features:
+  local_as: Supports local-as functionality
+  vrf_local_as: Supports local-as within a VRF
+  local_as_ibgp: Can use local-as to create IBGP sesssion
+  activate_af: Can control activation of individual address families
+  ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
+  rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
+  community: Granular BGP community propagation
+  confederation: BGP confederations
+  import: Import routes from other routing protocols
+warnings:
+  missing_igp: True
+  igp_list: [ ospf, eigrp, isis, ripv2 ]
