@@ -1,8 +1,3 @@
-\documentclass{article}
-\usepackage{markdown}
-\begin{document}
-
-\begin{markdown}
 
 ### Задание Underlay. BGP
 
@@ -1440,6 +1435,3 @@ round-trip min/avg/max = 0.095/0.113/0.123 ms
 ![Spine-1](./s1.cfg)
 ![Spine-2](./s2.cfg)
 
-\end{markdown}
-
-\end{document}
