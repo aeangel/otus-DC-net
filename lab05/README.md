@@ -60,7 +60,6 @@ loopback
 
 
 
-
 ![конфиг файл](./topology.yml)
 или под катом
 
@@ -284,7 +283,7 @@ links:
         vlan.access: blue
 
      ```
-</details>
+ </details>
 
 
 ### Проверка работы
