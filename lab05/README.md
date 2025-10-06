@@ -358,3 +358,244 @@ round-trip min/avg/max = 0.982/1.239/1.910 ms
 | h3 | aa:c1:ab:cb:d4:25  | 172.16.1.13/24 | fd00::172:16:1:d/116 | fe80::a8c1:abff:fecb:d425/64 | red   | 101000  |
 | h4 | aa:c1:ab:60:b1:45  | 172.16.2.14/24 | fd00::172:16:2:e/116 | fe80::a8c1:abff:fe60:b145/64 | blue  | 101001  |
 
+
+
+Вот что показывает spine-1 о наших evpn
+
+<details>
+  <summary>spine-1 show evpn </summary>
+
+```text
+s1#show bgp evpn vni 101000
+BGP routing table information for VRF default
+Router identifier 192.168.1.1, local AS number 65500
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending best path selection
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fe80::50dc:caff:fefd:300
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fe80::50dc:caff:fefd:300
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fe80::50dc:caff:fefd:500
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fe80::50dc:caff:fefd:500
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.1:1000 mac-ip aac1.ab0d.85f0
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1000 mac-ip aac1.ab0d.85f0
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.1:1000 mac-ip aac1.ab0d.85f0 fe80::a8c1:abff:fe0d:85f0
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1000 mac-ip aac1.ab0d.85f0 fe80::a8c1:abff:fe0d:85f0
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1000 mac-ip aac1.abcb.d425
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1000 mac-ip aac1.abcb.d425
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1000 mac-ip aac1.abcb.d425 fe80::a8c1:abff:fecb:d425
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1000 mac-ip aac1.abcb.d425 fe80::a8c1:abff:fecb:d425
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.1:1000 imet 192.168.2.1
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1000 imet 192.168.2.1
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1000 imet 192.168.2.3
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1000 imet 192.168.2.3
+                                 192.168.2.3           -       100     0       i
+
+s1#show bgp evpn vni 101001
+BGP routing table information for VRF default
+Router identifier 192.168.1.1, local AS number 65500
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending best path selection
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fe80::50dc:caff:fefd:400
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fe80::50dc:caff:fefd:400
+                                 192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fe80::50dc:caff:fefd:501
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fe80::50dc:caff:fefd:501
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 mac-ip aac1.ab60.b145
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 mac-ip aac1.ab60.b145
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 mac-ip aac1.ab60.b145 fe80::a8c1:abff:fe60:b145
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 mac-ip aac1.ab60.b145 fe80::a8c1:abff:fe60:b145
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.2:1001 mac-ip aac1.aba5.c348
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1001 mac-ip aac1.aba5.c348
+                                 192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.2:1001 mac-ip aac1.aba5.c348 fe80::a8c1:abff:fea5:c348
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1001 mac-ip aac1.aba5.c348 fe80::a8c1:abff:fea5:c348
+                                 192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.2:1001 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1001 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 imet 192.168.2.3
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 imet 192.168.2.3
+                                 192.168.2.3           -       100     0       i
+
+```
+
+  </details>
+
+Как видим распространяются link-local еще и vlan-if которые прибиты внутри frr, ниже выдержка ip a c leaf-3
+```
+3: vlan1000: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 52:dc:ca:fd:05:00 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::50dc:caff:fefd:500/64 scope link
+       valid_lft forever preferred_lft forever
+4: vlan1001: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 52:dc:ca:fd:05:01 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::50dc:caff:fefd:501/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+А вот и вывод по evpn маршрутам с leaf-3 
+
+<details>
+  <summary>leaf-3 show evpn </summary>
+
+```text
+
+l3# show bgp evpn route vni 101000
+BGP table version is 1164, local router ID is 192.168.2.3
+Status codes: s suppressed, d damped, h history, * valid, > best, i - internal
+Origin codes: i - IGP, e - EGP, ? - incomplete
+EVPN type-1 prefix: [1]:[EthTag]:[ESI]:[IPlen]:[VTEP-IP]:[Frag-id]
+EVPN type-2 prefix: [2]:[EthTag]:[MAClen]:[MAC]:[IPlen]:[IP]
+EVPN type-3 prefix: [3]:[EthTag]:[IPlen]:[OrigIP]
+EVPN type-4 prefix: [4]:[ESI]:[IPlen]:[OrigIP]
+EVPN type-5 prefix: [5]:[EthTag]:[IPlen]:[IP]
+
+   Network          Next Hop            Metric LocPrf Weight Path
+ *>i [2]:[0]:[48]:[52:dc:ca:fd:03:00]:[128]:[fe80::50dc:caff:fefd:300]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [2]:[0]:[48]:[52:dc:ca:fd:03:00]:[128]:[fe80::50dc:caff:fefd:300]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [2]:[0]:[48]:[52:dc:ca:fd:03:00]:[128]:[fe80::50dc:caff:fefd:300]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [2]:[0]:[48]:[52:dc:ca:fd:03:00]:[128]:[fe80::50dc:caff:fefd:300]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *>  [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fe80::50dc:caff:fefd:500]
+                    192.168.2.3(l3)                    32768 i
+                    ET:8 RT:65500:1000
+ *>i [2]:[0]:[48]:[aa:c1:ab:0d:85:f0]:[128]:[fe80::a8c1:abff:fe0d:85f0]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [2]:[0]:[48]:[aa:c1:ab:0d:85:f0]:[128]:[fe80::a8c1:abff:fe0d:85f0]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [2]:[0]:[48]:[aa:c1:ab:0d:85:f0]:[128]:[fe80::a8c1:abff:fe0d:85f0]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [2]:[0]:[48]:[aa:c1:ab:0d:85:f0]:[128]:[fe80::a8c1:abff:fe0d:85f0]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *>  [2]:[0]:[48]:[aa:c1:ab:cb:d4:25]:[128]:[fe80::a8c1:abff:fecb:d425]
+                    192.168.2.3(l3)                    32768 i
+                    ET:8 RT:65500:1000
+ *>i [3]:[0]:[32]:[192.168.2.1]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [3]:[0]:[32]:[192.168.2.1]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [3]:[0]:[32]:[192.168.2.1]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *=i [3]:[0]:[32]:[192.168.2.1]
+                    192.168.2.1                   100      0 i
+                    RT:65500:1000 ET:8
+ *>  [3]:[0]:[32]:[192.168.2.3]
+                    192.168.2.3(l3)                    32768 i
+                    ET:8 RT:65500:1000
+
+Displayed 6 prefixes (15 paths)
+
+l3# show bgp evpn route vni 101001
+BGP table version is 1170, local router ID is 192.168.2.3
+Status codes: s suppressed, d damped, h history, * valid, > best, i - internal
+Origin codes: i - IGP, e - EGP, ? - incomplete
+EVPN type-1 prefix: [1]:[EthTag]:[ESI]:[IPlen]:[VTEP-IP]:[Frag-id]
+EVPN type-2 prefix: [2]:[EthTag]:[MAClen]:[MAC]:[IPlen]:[IP]
+EVPN type-3 prefix: [3]:[EthTag]:[IPlen]:[OrigIP]
+EVPN type-4 prefix: [4]:[ESI]:[IPlen]:[OrigIP]
+EVPN type-5 prefix: [5]:[EthTag]:[IPlen]:[IP]
+
+   Network          Next Hop            Metric LocPrf Weight Path
+ *>i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fe80::50dc:caff:fefd:400]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fe80::50dc:caff:fefd:400]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fe80::50dc:caff:fefd:400]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fe80::50dc:caff:fefd:400]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *>  [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fe80::50dc:caff:fefd:501]
+                    192.168.2.3(l3)                    32768 i
+                    ET:8 RT:65500:1001
+ *>  [2]:[0]:[48]:[aa:c1:ab:60:b1:45]:[128]:[fe80::a8c1:abff:fe60:b145]
+                    192.168.2.3(l3)                    32768 i
+                    ET:8 RT:65500:1001
+ *>i [2]:[0]:[48]:[aa:c1:ab:a5:c3:48]:[128]:[fe80::a8c1:abff:fea5:c348]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [2]:[0]:[48]:[aa:c1:ab:a5:c3:48]:[128]:[fe80::a8c1:abff:fea5:c348]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [2]:[0]:[48]:[aa:c1:ab:a5:c3:48]:[128]:[fe80::a8c1:abff:fea5:c348]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [2]:[0]:[48]:[aa:c1:ab:a5:c3:48]:[128]:[fe80::a8c1:abff:fea5:c348]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *>i [3]:[0]:[32]:[192.168.2.2]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [3]:[0]:[32]:[192.168.2.2]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [3]:[0]:[32]:[192.168.2.2]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *=i [3]:[0]:[32]:[192.168.2.2]
+                    192.168.2.2                   100      0 i
+                    RT:65500:1001 ET:8
+ *>  [3]:[0]:[32]:[192.168.2.3]
+                    192.168.2.3(l3)                    32768 i
+                    ET:8 RT:65500:1001
+
+Displayed 6 prefixes (15 paths)
+
+```
+
+  </details>
+
+Если заглянуть в wireshark то можно увидеть как на leaf происходит обмен маршрутами второго типа.
+
+![bgp-update](bgp-update.png)
+
