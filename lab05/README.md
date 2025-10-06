@@ -603,5 +603,5 @@ Displayed 6 prefixes (15 paths)
 
 Самым интересным открытием стало что при передаче второго типа маршрутов передаются так же и link-local для ipv6
 
-![bgp-update](bgp-update.png)
+![bgp-updateipv6](bgp-updateipv6.png)
 
