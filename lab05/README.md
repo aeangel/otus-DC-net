@@ -605,3 +605,12 @@ Displayed 6 prefixes (15 paths)
 
 ![bgp-updateipv6](bgp-updateipv6.png)
 
+
+Конфигурационные файлы, забыл сначала приложить, но удобно что можно ввести команду neltab collect и забрать их в директории config.
+Конфигурационные файлы устройств:  
+![Leaf-1](./l1.cfg)
+![Leaf-2](./l2.cfg)
+![Leaf-3](./l3.cfg)
+![Spine-1](./s1.cfg)
+![Spine-2](./s2.cfg)
+
