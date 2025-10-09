@@ -1,6 +1,6 @@
 # Table of contents
 
-* [lab01](README.md)
+* [lab01](lab01/README.md)
 * [lab02](lab02/README.md)
 * [lab03](lab03/README.md)
 * [lab04](lab04/README.md)
