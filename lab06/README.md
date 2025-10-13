@@ -49,16 +49,20 @@ loopback
 | Leaf-2   | 192.168.2.2 | fd00::192:168:2:2 |
 | Leaf-3   | 192.168.2.3 | fd00::192:168:2:3 |
 
+Vlan-if
+
+| Device  |VLAN id | VLANif ipv4   | VLANif ipv6          | VARP ipv4       |
+|---------|--------|---------------|----------------------| ----------------|
+| Leaf-1  | 1000   | 172.16.1.3/24 | fd00::172:16:1:3/116 | 172.16.1.100/24 |
+| Leaf-2  | 1001   | 172.16.2.4/24 | fd00::172:16:2:4/116 | 172.16.2.100/24 |
+| Leaf-3  | 1000   | 172.16.1.5/24 | fd00::172:16:1:5/116 | 172.16.1.100/24 |
+| Leaf-3  | 1001   | 172.16.2.5/24 | fd00::172:16:2:5/116 | 172.16.2.100/24 |
+
 Собираем топологию на базе ospf+ibgp. Area ospf 0, bgp as 65500
 
 ### Запуск лабараторной в среде netlab
-Казалось бы все просто, но очень долго мучался с работой access на frr. Оказалось что если назначать подключаемые интерфейсы не по порядку, то происходит mismatching и с точки зрения frr настраиваются не те интерфейсы которые настраиваются в бриджинг со стороны linux alpine внутри которого этот frr крутится. 
-Так же меня не очень устроило что по умолчанию создается сессия между spine выступающими route reflector, которая не совсем понятно зачем нужна в случае отсутсвия прямого линка между ними.
-Поэтому лезем в код, а именно покурив  /usr/local/lib/python3.10/dist-packages/netsim/modules/bgp.py  узнаем что при создании сессий в случае присутсвия роут рефлектора, строится не full mesh а сессии только от RR, но не обрабатываются ситуация сессий с другими RR, добавив условие проверки, получаем что netlab работать перестает. Немного вспомнив курсы по python понимаю, что накосячил с отступами, все поправил - netlab запустился. Вроде все хорошо, но понял что данное изменение безоговорочно убирает сессию, хотя опрос всех знакомых сетевых инженеров так и не принес ответа зачем может понадобится такая сессия, решил что может кому и понадобится, а значит добавляем в обработчик /usr/local/lib/python3.10/dist-packages/netsim/modules/bgp.yml параметр который поможет управлять этим процессом. По умолчанию выставил False. Пару раз пришлось все перезапускать чтобы проверить корректность работы. 
-Измененные файлы прилагаю если вдруг кто то найдет их здесь раньше, чем я доберусь до того чтобы законтрибьютить это в проект netlaba. 
-![bgp.py](./bgp.py)
-![bgp.yml](./bgp.yml)
-
+ Особенностей в запуске не было, для того чтобы не мешать в одну кучу сервисы и транспорт, ввел vrf - user в который поместил оба vlan-if что позволит хостам общаться между собой. Так же так как в основном я работаю с решением centralized gateway, когда l3 приземляется на border-leaf, решил попробовать distributed  gateway, чтобы посмотреть как оно настраивается и forwadит.
+ Единственное модуль gateway, обеспечивающий работу протоколов fhrp растягивает только ipv4 адрес между оборудованием, попытки подружить его с ipv6 не очень получились.
 
 
 ![конфиг файл](./topology.yml)
@@ -68,15 +72,24 @@ loopback
   <summary>topology.yml </summary>
 
   ```yml
-
- ---
+---
 provider: clab
-module: [ vlan,vxlan,ospf,bgp,evpn,bfd ]
+module: [ vlan,vxlan,vrf,ospf,bgp,evpn,bfd,gateway ]
 plugin: [ bgp.session ]
 
 #bgp
 bgp.bfd: True
-bgp.as: 65500
+bgp:
+  as: 65500
+  rr_list: [ s1,s2 ]
+#mesh false
+  rr_mesh: False
+gateway.protocol: anycast
+gateway.id: 100
+
+
+#jumbo
+defaults.interfaces.mtu: 8192
 
 tools:
   edgeshark:
@@ -87,14 +100,14 @@ nodes:
  s1:
   device: eos
   id: 1
-  bgp.rr: True
+#  bgp.rr: True
   loopback:
     ipv4: 192.168.1.1/32
     ipv6: fd00::192:168:1:1/128
  s2:
   device: eos
   id: 2
-  bgp.rr: True
+#  bgp.rr: True
   loopback:
     ipv4: 192.168.1.2/32
     ipv6: fd00::192:168:1:2/128
@@ -129,15 +142,24 @@ nodes:
   id: 14
   device: linux
 
+
+#vrf
+vrfs:
+  user:
+    evpn.transit_vni: 10000
+    ospf: False
+
 #vlan
 vlans:
   red:
-    mode: bridge
+    vrf: user
+    gateway: True
     prefix:
       ipv4: 172.16.1.0/24
       ipv6: fd00::172:16:1:0/116
   blue:
-    mode: bridge
+    vrf: user
+    gateway: True
     prefix:
       ipv4: 172.16.2.0/24
       ipv6: fd00::172:16:2:0/116
@@ -289,79 +311,257 @@ links:
 
 ### Проверка работы
 
-Какой конечный результат мы хотели? связность между h1 и h3, h2 и h4 соответственно. И чтобы через vxlan.
-Стартуем и смотрим на пинги
+Именно в этом этапе и пришла идея засунуть в vrf хосты(сервера), чтобы можно было смотреть и показывать таблицы роутинга без перемешивания. Исходя из топологии у нас все хосты должны видеть друг друга, включая interface vlan на всех коммутаторах. 
+
 
 <details>
   <summary>h1 pings </summary>
   
   ```txt  
-lh1:/# ping h3
+
+h1:/# ping h2
+PING h2 (172.16.2.12): 56 data bytes
+64 bytes from 172.16.2.12: seq=0 ttl=62 time=1.160 ms
+64 bytes from 172.16.2.12: seq=1 ttl=62 time=0.931 ms
+^C
+--- h2 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.931/1.045/1.160 ms
+h1:/# ping h3
 PING h3 (172.16.1.13): 56 data bytes
-64 bytes from 172.16.1.13: seq=0 ttl=64 time=0.786 ms
-64 bytes from 172.16.1.13: seq=1 ttl=64 time=0.965 ms
-64 bytes from 172.16.1.13: seq=2 ttl=64 time=0.914 ms
-64 bytes from 172.16.1.13: seq=3 ttl=64 time=0.975 ms
+64 bytes from 172.16.1.13: seq=0 ttl=64 time=1.530 ms
+64 bytes from 172.16.1.13: seq=1 ttl=64 time=1.136 ms
+64 bytes from 172.16.1.13: seq=2 ttl=64 time=1.219 ms
 ^C
 --- h3 ping statistics ---
-4 packets transmitted, 4 packets received, 0% packet loss
-round-trip min/avg/max = 0.786/0.910/0.975 ms
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 1.136/1.295/1.530 ms
+h1:/# ping h4
+PING h4 (172.16.2.14): 56 data bytes
+64 bytes from 172.16.2.14: seq=0 ttl=62 time=1.763 ms
+64 bytes from 172.16.2.14: seq=1 ttl=62 time=1.621 ms
+64 bytes from 172.16.2.14: seq=2 ttl=62 time=1.800 ms
+^C
+--- h4 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 1.621/1.728/1.800 ms
 h1:/# ping6 h3
 PING h3 (fd00::172:16:1:d): 56 data bytes
-64 bytes from fd00::172:16:1:d: seq=0 ttl=64 time=1.686 ms
-64 bytes from fd00::172:16:1:d: seq=1 ttl=64 time=0.852 ms
-64 bytes from fd00::172:16:1:d: seq=2 ttl=64 time=0.905 ms
-64 bytes from fd00::172:16:1:d: seq=3 ttl=64 time=1.057 ms
-x64 bytes from fd00::172:16:1:d: seq=4 ttl=64 time=0.860 ms
+64 bytes from fd00::172:16:1:d: seq=0 ttl=64 time=2.523 ms
+64 bytes from fd00::172:16:1:d: seq=1 ttl=64 time=1.141 ms
 ^C
 --- h3 ping statistics ---
-5 packets transmitted, 5 packets received, 0% packet loss
-round-trip min/avg/max = 0.852/1.072/1.686 ms
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 1.141/1.832/2.523 ms
+h1:/# ping6 h2
+PING h2 (fd00::172:16:2:c): 56 data bytes
+64 bytes from fd00::172:16:2:c: seq=0 ttl=62 time=1.904 ms
+64 bytes from fd00::172:16:2:c: seq=1 ttl=62 time=1.125 ms
+64 bytes from fd00::172:16:2:c: seq=2 ttl=62 time=0.879 ms
+^C
+--- h2 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.879/1.302/1.904 ms
+h1:/# ping6 h4
+PING h4 (fd00::172:16:2:e): 56 data bytes
+64 bytes from fd00::172:16:2:e: seq=0 ttl=62 time=2.180 ms
+64 bytes from fd00::172:16:2:e: seq=1 ttl=62 time=1.397 ms
+64 bytes from fd00::172:16:2:e: seq=2 ttl=62 time=1.545 ms
+^C
+--- h4 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 1.397/1.707/2.180 ms
+h1:/# ping 172.16.1.100
+PING 172.16.1.100 (172.16.1.100): 56 data bytes
+64 bytes from 172.16.1.100: seq=0 ttl=64 time=0.115 ms
+64 bytes from 172.16.1.100: seq=1 ttl=64 time=0.098 ms
+^C
+--- 172.16.1.100 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.098/0.106/0.115 ms
+h1:/# ping 172.16.2.100
+PING 172.16.2.100 (172.16.2.100): 56 data bytes
+64 bytes from 172.16.2.100: seq=0 ttl=63 time=1.668 ms
+64 bytes from 172.16.2.100: seq=1 ttl=63 time=0.912 ms
+64 bytes from 172.16.2.100: seq=2 ttl=63 time=1.198 ms
+^C
+--- 172.16.2.100 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.912/1.259/1.668 ms
+h1:/# ping 172.16.1.5
+PING 172.16.1.5 (172.16.1.5): 56 data bytes
+64 bytes from 172.16.1.5: seq=0 ttl=63 time=1.136 ms
+64 bytes from 172.16.1.5: seq=1 ttl=63 time=1.136 ms
+^C
+--- 172.16.1.5 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 1.136/1.136/1.136 ms
+h1:/# ping 172.16.2.4
+PING 172.16.2.4 (172.16.2.4): 56 data bytes
+64 bytes from 172.16.2.4: seq=0 ttl=63 time=1.110 ms
+64 bytes from 172.16.2.4: seq=1 ttl=63 time=1.235 ms
+64 bytes from 172.16.2.4: seq=2 ttl=63 time=0.982 ms
+^C
+--- 172.16.2.4 ping statistics ---
+3 packets transmitted, 3 packets received, 0% packet loss
+round-trip min/avg/max = 0.982/1.109/1.235 ms
 
 ```
 </details>
+
+С других хостов пинговать смысла наверное нет, т.к. все видят всех, и имеют общую таблицу маршрутизации, вот она с leaf-3(там более показательно так как на нем оба vlan)
 
 <details>
-  <summary>h4 pings </summary>
-  
-  ```txt  
-h4:/# ping h2
-PING h2 (172.16.2.12): 56 data bytes
-64 bytes from 172.16.2.12: seq=0 ttl=64 time=1.647 ms
-64 bytes from 172.16.2.12: seq=1 ttl=64 time=0.915 ms
-64 bytes from 172.16.2.12: seq=2 ttl=64 time=0.883 ms
-64 bytes from 172.16.2.12: seq=3 ttl=64 time=0.848 ms
-64 bytes from 172.16.2.12: seq=4 ttl=64 time=0.971 ms
-^C
---- h2 ping statistics ---
-5 packets transmitted, 5 packets received, 0% packet loss
-round-trip min/avg/max = 0.848/1.052/1.647 ms
-h4:/# ping6 h2
-PING h2 (fd00::172:16:2:c): 56 data bytes
-64 bytes from fd00::172:16:2:c: seq=0 ttl=64 time=1.910 ms
-64 bytes from fd00::172:16:2:c: seq=1 ttl=64 time=0.982 ms
-64 bytes from fd00::172:16:2:c: seq=2 ttl=64 time=1.177 ms
-64 bytes from fd00::172:16:2:c: seq=3 ttl=64 time=1.105 ms
-64 bytes from fd00::172:16:2:c: seq=4 ttl=64 time=1.021 ms
-^C
---- h2 ping statistics ---
-5 packets transmitted, 5 packets received, 0% packet loss
-round-trip min/avg/max = 0.982/1.239/1.910 ms
+  <summary>leaf-3 show ip route vrf user </summary>
+
+```text
+
+l3# show ip route vrf user
+Codes: K - kernel route, C - connected, L - local, S - static,
+       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
+       f - OpenFabric, t - Table-Direct,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+       t - trapped, o - offload failure
+
+IPv4 unicast VRF user:
+C * 172.16.1.0/24 [0/1024] is directly connected, varp-40000, weight 1, 00:21:53
+C>* 172.16.1.0/24 is directly connected, vlan1000, weight 1, 00:22:00
+B>* 172.16.1.3/32 [200/0] via 192.168.2.1, tvni-100 onlink, weight 1, 00:21:45
+                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:21:45
+                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:21:45
+                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:21:45
+L>* 172.16.1.5/32 is directly connected, vlan1000, weight 1, 00:22:00
+B>* 172.16.1.11/32 [200/0] via 192.168.2.1, tvni-100 onlink, weight 1, 00:05:21
+                           via 192.168.2.1, tvni-100 onlink, weight 1, 00:05:21
+                           via 192.168.2.1, tvni-100 onlink, weight 1, 00:05:21
+                           via 192.168.2.1, tvni-100 onlink, weight 1, 00:05:21
+L>* 172.16.1.100/32 is directly connected, varp-40000, weight 1, 00:21:53
+C * 172.16.2.0/24 [0/1024] is directly connected, varp-40001, weight 1, 00:21:53
+C>* 172.16.2.0/24 is directly connected, vlan1001, weight 1, 00:22:00
+B>* 172.16.2.4/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:21:45
+                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:21:45
+                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:21:45
+                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:21:45
+L>* 172.16.2.5/32 is directly connected, vlan1001, weight 1, 00:22:00
+B>* 172.16.2.12/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
+                           via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
+                           via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
+                           via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
+L>* 172.16.2.100/32 is directly connected, varp-40001, weight 1, 00:21:53
 
 ```
 </details>
 
-Пинги между хостами побежали, значит можно посмотреть что происходит у нас на leaf и spine, какие есть маршруты и прочее.
-Учитывая что у нас поднялся evpn и по ipv4 и по ipv6 будет весело но для понимания введем таблицу mac для устройств
+Как видим у нас дублируются маршруты, происходит это потому что bgp evpn у нас поднят и на ipv4 и на ipv6. Уж не знаю поднимает ли кто фабрику с dual-stack evpn, но в целом идея интересная. Надо бы попробовать собрать смешанную фабрику где spine-1 ipv4 only, spine-2 ipv6 only, но отложим эксперимент на другой раз.
+Ниже выводы подтверждающие тезис о дублировании
+<details>
+  <summary>leaf-3 show ip route vrf user </summary>
 
-|Host| MAC                | ipv4           | ipv6                 | ipv6 local                   | vlan  | vni     |
-|----|--------------------|----------------|----------------------|------------------------------|-------|---------|
-| h1 | aa:c1:ab:0d:85:f0  | 172.16.1.11/24 | fd00::172:16:1:b/116 | fe80::a8c1:abff:fe0d:85f0/64 | red   | 101000  |
-| h2 | aa:c1:ab:a5:c3:48  | 172.16.2.12/24 | fd00::172:16:2:c/116 | fe80::a8c1:abff:fea5:c348/64 | blue  | 101001  |
-| h3 | aa:c1:ab:cb:d4:25  | 172.16.1.13/24 | fd00::172:16:1:d/116 | fe80::a8c1:abff:fecb:d425/64 | red   | 101000  |
-| h4 | aa:c1:ab:60:b1:45  | 172.16.2.14/24 | fd00::172:16:2:e/116 | fe80::a8c1:abff:fe60:b145/64 | blue  | 101001  |
+```text
 
+====== убираем evpn peer ipv6 ======
+l3# conf t
+l3(config)# router bgp 65500
+l3(config-router)# address-family l2vpn evpn
+l3(config-router-af)# no neighbor fd00::192:168:1:1 activate
+l3(config-router-af)# no neighbor fd00::192:168:1:2 activate
+l3(config-router-af)# end
 
+======= смотрим evpn пиры и проверяем количество маршрутов =======
+
+l3# show bgp evpn summary
+BGP router identifier 192.168.2.3, local AS number 65500 VRF default vrf-id 0
+BGP table version 0
+RIB entries 15, using 1920 bytes of memory
+Peers 2, using 33 KiB of memory
+
+Neighbor        V         AS   MsgRcvd   MsgSent   TblVer  InQ OutQ  Up/Down State/PfxRcd   PfxSnt Desc
+192.168.1.1     4      65500       662       556       22    0    0 00:26:06           12       12 s1
+192.168.1.2     4      65500       660       555       22    0    0 00:26:06           12       12 s2
+
+Total number of neighbors 2
+l3# show ip route vrf user
+Codes: K - kernel route, C - connected, L - local, S - static,
+       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
+       f - OpenFabric, t - Table-Direct,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+       t - trapped, o - offload failure
+
+IPv4 unicast VRF user:
+C * 172.16.1.0/24 [0/1024] is directly connected, varp-40000, weight 1, 00:26:19
+C>* 172.16.1.0/24 is directly connected, vlan1000, weight 1, 00:26:26
+B>* 172.16.1.3/32 [200/0] via 192.168.2.1, tvni-100 onlink, weight 1, 00:00:23
+                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:00:23
+L>* 172.16.1.5/32 is directly connected, vlan1000, weight 1, 00:26:26
+L>* 172.16.1.100/32 is directly connected, varp-40000, weight 1, 00:26:19
+C * 172.16.2.0/24 [0/1024] is directly connected, varp-40001, weight 1, 00:26:19
+C>* 172.16.2.0/24 is directly connected, vlan1001, weight 1, 00:26:26
+B>* 172.16.2.4/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:00:23
+                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:00:23
+L>* 172.16.2.5/32 is directly connected, vlan1001, weight 1, 00:26:26
+L>* 172.16.2.100/32 is directly connected, varp-40001, weight 1, 00:26:19
+
+======= возвращеаем evpn пиры =======
+
+l3# conf t
+l3(config)# router bgp 65500
+l3(config-router)# address-family l2vpn evpn
+l3(config-router-af)# neighbor fd00::192:168:1:2 activate
+l3(config-router-af)# neighbor fd00::192:168:1:1 activate
+l3(config-router-af)# end
+l3# show bgp evpn
+  import-rt  Show import route target
+  route      EVPN route information
+  summary    Summary of BGP neighbor status
+  vni        Show VNI
+l3# show bgp evpn summary
+BGP router identifier 192.168.2.3, local AS number 65500 VRF default vrf-id 0
+BGP table version 0
+RIB entries 15, using 1920 bytes of memory
+Peers 4, using 66 KiB of memory
+
+Neighbor          V         AS   MsgRcvd   MsgSent   TblVer  InQ OutQ  Up/Down State/PfxRcd   PfxSnt Desc
+192.168.1.1       4      65500       683       574       30    0    0 00:26:59           12       12 s1
+192.168.1.2       4      65500       681       573       30    0    0 00:26:59           12       12 s2
+fd00::192:168:1:1 4      65500       705       595       30    0    0 00:00:10           12       12 s1
+fd00::192:168:1:2 4      65500       705       595       30    0    0 00:00:13           12       12 s2
+
+Total number of neighbors 4
+
+l3# show ip route vrf user
+Codes: K - kernel route, C - connected, L - local, S - static,
+       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
+       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
+       f - OpenFabric, t - Table-Direct,
+       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
+       t - trapped, o - offload failure
+
+IPv4 unicast VRF user:
+C * 172.16.1.0/24 [0/1024] is directly connected, varp-40000, weight 1, 00:38:55
+C>* 172.16.1.0/24 is directly connected, vlan1000, weight 1, 00:39:02
+B>* 172.16.1.3/32 [200/0] via 192.168.2.1, tvni-100 onlink, weight 1, 00:11:59
+                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:11:59
+                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:11:59
+                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:11:59
+L>* 172.16.1.5/32 is directly connected, vlan1000, weight 1, 00:39:02
+L>* 172.16.1.100/32 is directly connected, varp-40000, weight 1, 00:38:55
+C * 172.16.2.0/24 [0/1024] is directly connected, varp-40001, weight 1, 00:38:55
+C>* 172.16.2.0/24 is directly connected, vlan1001, weight 1, 00:39:02
+B>* 172.16.2.4/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:11:59
+                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:11:59
+                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:11:59
+                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:11:59
+L>* 172.16.2.5/32 is directly connected, vlan1001, weight 1, 00:39:02
+L>* 172.16.2.100/32 is directly connected, varp-40001, weight 1, 00:38:55
+
+```
+</details>
+
+Все вернулось на свое место. Кстати по умолчанию ipv6 peer для evpn на аристах работать не захотел, пришлось поправить темплейт арист для настройке в файле usr/local/lib/python3.10/dist-packages/netsim/ansible/templates/evpn/eos.j2 
+
+Раз роутинг между хостами заработал, а ведь ради этого и собирались, посмотрим как видят происходящее фабрика.
 
 Вот что показывает spine-1 о наших evpn
 
@@ -378,29 +578,29 @@ Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fe80::50dc:caff:fefd:300
+ * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 172.16.1.3
                                  192.168.2.1           -       100     0       i
- *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fe80::50dc:caff:fefd:300
+ *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 172.16.1.3
                                  192.168.2.1           -       100     0       i
- * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fe80::50dc:caff:fefd:500
+ * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fd00::172:16:1:3
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fd00::172:16:1:3
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fe80::f8c0:10c7:908e:9108
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fe80::f8c0:10c7:908e:9108
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 172.16.1.5
                                  192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fe80::50dc:caff:fefd:500
+ *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 172.16.1.5
                                  192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.1:1000 mac-ip aac1.ab0d.85f0
-                                 192.168.2.1           -       100     0       i
- *  ec    RD: 192.168.2.1:1000 mac-ip aac1.ab0d.85f0
-                                 192.168.2.1           -       100     0       i
- * >Ec    RD: 192.168.2.1:1000 mac-ip aac1.ab0d.85f0 fe80::a8c1:abff:fe0d:85f0
-                                 192.168.2.1           -       100     0       i
- *  ec    RD: 192.168.2.1:1000 mac-ip aac1.ab0d.85f0 fe80::a8c1:abff:fe0d:85f0
-                                 192.168.2.1           -       100     0       i
- * >Ec    RD: 192.168.2.3:1000 mac-ip aac1.abcb.d425
+ * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fd00::172:16:1:5
                                  192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1000 mac-ip aac1.abcb.d425
+ *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fd00::172:16:1:5
                                  192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1000 mac-ip aac1.abcb.d425 fe80::a8c1:abff:fecb:d425
+ * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fe80::5ee8:40ce:592a:2792
                                  192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1000 mac-ip aac1.abcb.d425 fe80::a8c1:abff:fecb:d425
+ *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fe80::5ee8:40ce:592a:2792
                                  192.168.2.3           -       100     0       i
  * >Ec    RD: 192.168.2.1:1000 imet 192.168.2.1
                                  192.168.2.1           -       100     0       i
@@ -410,7 +610,6 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  192.168.2.3           -       100     0       i
  *  ec    RD: 192.168.2.3:1000 imet 192.168.2.3
                                  192.168.2.3           -       100     0       i
-
 s1#show bgp evpn vni 101001
 BGP routing table information for VRF default
 Router identifier 192.168.1.1, local AS number 65500
@@ -420,30 +619,30 @@ Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fe80::50dc:caff:fefd:400
+ * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 172.16.2.4
                                  192.168.2.2           -       100     0       i
- *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fe80::50dc:caff:fefd:400
+ *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 172.16.2.4
                                  192.168.2.2           -       100     0       i
- * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fe80::50dc:caff:fefd:501
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fe80::50dc:caff:fefd:501
-                                 192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1001 mac-ip aac1.ab60.b145
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1001 mac-ip aac1.ab60.b145
-                                 192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1001 mac-ip aac1.ab60.b145 fe80::a8c1:abff:fe60:b145
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1001 mac-ip aac1.ab60.b145 fe80::a8c1:abff:fe60:b145
-                                 192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.2:1001 mac-ip aac1.aba5.c348
+ * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fd00::172:16:2:4
                                  192.168.2.2           -       100     0       i
- *  ec    RD: 192.168.2.2:1001 mac-ip aac1.aba5.c348
+ *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fd00::172:16:2:4
                                  192.168.2.2           -       100     0       i
- * >Ec    RD: 192.168.2.2:1001 mac-ip aac1.aba5.c348 fe80::a8c1:abff:fea5:c348
+ * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fe80::67f9:517b:db31:5bad
                                  192.168.2.2           -       100     0       i
- *  ec    RD: 192.168.2.2:1001 mac-ip aac1.aba5.c348 fe80::a8c1:abff:fea5:c348
+ *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fe80::67f9:517b:db31:5bad
                                  192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 172.16.2.5
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 172.16.2.5
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fd00::172:16:2:5
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fd00::172:16:2:5
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fe80::e5c3:2894:3166:e3e0
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fe80::e5c3:2894:3166:e3e0
+                                 192.168.2.3           -       100     0       i
  * >Ec    RD: 192.168.2.2:1001 imet 192.168.2.2
                                  192.168.2.2           -       100     0       i
  *  ec    RD: 192.168.2.2:1001 imet 192.168.2.2
@@ -453,20 +652,87 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
  *  ec    RD: 192.168.2.3:1001 imet 192.168.2.3
                                  192.168.2.3           -       100     0       i
 
+s1#show bgp evpn vni 10000
+BGP routing table information for VRF default
+Router identifier 192.168.1.1, local AS number 65500
+Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
+                    c - Contributing to ECMP, % - Pending best path selection
+Origin codes: i - IGP, e - EGP, ? - incomplete
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  LocPref Weight  Path
+ * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 172.16.1.3
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 172.16.1.3
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fd00::172:16:1:3
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fd00::172:16:1:3
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 172.16.2.4
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 172.16.2.4
+                                 192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fd00::172:16:2:4
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fd00::172:16:2:4
+                                 192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 172.16.1.5
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 172.16.1.5
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fd00::172:16:1:5
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fd00::172:16:1:5
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 172.16.2.5
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 172.16.2.5
+                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fd00::172:16:2:5
+                                 192.168.2.3           -       100     0       i
+ *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fd00::172:16:2:5
+                                 192.168.2.3           -       100     0       i
+ * >      RD: 65500:1 ip-prefix 172.16.1.0/24
+                                 192.168.2.1           0       100     0       ?
+ *        RD: 65500:1 ip-prefix 172.16.1.0/24
+                                 192.168.2.1           0       100     0       ?
+ *        RD: 65500:1 ip-prefix 172.16.1.0/24
+                                 192.168.2.3           0       100     0       ?
+ *        RD: 65500:1 ip-prefix 172.16.1.0/24
+                                 192.168.2.3           0       100     0       ?
+ * >      RD: 65500:1 ip-prefix 172.16.2.0/24
+                                 192.168.2.2           0       100     0       ?
+ *        RD: 65500:1 ip-prefix 172.16.2.0/24
+                                 192.168.2.2           0       100     0       ?
+ *        RD: 65500:1 ip-prefix 172.16.2.0/24
+                                 192.168.2.3           0       100     0       ?
+ *        RD: 65500:1 ip-prefix 172.16.2.0/24
+                                 192.168.2.3           0       100     0       ?
+ * >      RD: 65500:1 ip-prefix fd00::172:16:1:0/116
+                                 192.168.2.1           0       100     0       ?
+ *        RD: 65500:1 ip-prefix fd00::172:16:1:0/116
+                                 192.168.2.1           0       100     0       ?
+ *        RD: 65500:1 ip-prefix fd00::172:16:1:0/116
+                                 192.168.2.3           0       100     0       ?
+ *        RD: 65500:1 ip-prefix fd00::172:16:1:0/116
+                                 192.168.2.3           0       100     0       ?
+ * >      RD: 65500:1 ip-prefix fd00::172:16:2:0/116
+                                 192.168.2.2           0       100     0       ?
+ *        RD: 65500:1 ip-prefix fd00::172:16:2:0/116
+                                 192.168.2.2           0       100     0       ?
+ *        RD: 65500:1 ip-prefix fd00::172:16:2:0/116
+                                 192.168.2.3           0       100     0       ?
+ *        RD: 65500:1 ip-prefix fd00::172:16:2:0/116
+                                 192.168.2.3           0       100     0       ?
+
 ```
 
   </details>
 
-Как видим распространяются link-local еще и vlan-if которые прибиты внутри frr, ниже выдержка ip a c leaf-3
-```
-3: vlan1000: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
-    link/ether 52:dc:ca:fd:05:00 brd ff:ff:ff:ff:ff:ff
-    inet6 fe80::50dc:caff:fefd:500/64 scope link
-       valid_lft forever preferred_lft forever
-4: vlan1001: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
-    link/ether 52:dc:ca:fd:05:01 brd ff:ff:ff:ff:ff:ff
-    inet6 fe80::50dc:caff:fefd:501/64 scope link
-       valid_lft forever preferred_lft forever
+Получается у нас есть 3 vni - 101000, 101001 l2 домен, и 10000 который bindится к vrf user. То есть у нас symmetric IRB
+
+
 ```
 
 А вот и вывод по evpn маршрутам с leaf-3 
