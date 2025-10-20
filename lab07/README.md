@@ -37,7 +37,7 @@ Interconnect ipv4 ipv6
 | Spine-1  | Eth2        | 10.1.1.2/31    | fd00::10:1:1:2/127    | Leaf-2   | Eth1        | 10.1.1.3/31    | fd00::10:1:1:3/127    |
 | Spine-1  | Eth3        | 10.1.1.4/31    | fd00::10:1:1:4/127    | Leaf-3   | Eth1        | 10.1.1.5/31    | fd00::10:1:1:5/127    |
 | Spine-1  | Eth4        | 10.1.1.6/31    | fd00::10:1:1:6/127    | Leaf-4   | Eth1        | 10.1.1.7/31    | fd00::10:1:1:7/127    |
-| Spine-2  | Eth2        | 10.1.2.0/31    | fd00::10:1:2:0/127    | Leaf-1   | Eth2        | 10.1.2.1/31    | fd00::10:1:2:1/127    |
+| Spine-2  | Eth1        | 10.1.2.0/31    | fd00::10:1:2:0/127    | Leaf-1   | Eth2        | 10.1.2.1/31    | fd00::10:1:2:1/127    |
 | Spine-2  | Eth2        | 10.1.2.2/31    | fd00::10:1:2:2/127    | Leaf-2   | Eth2        | 10.1.2.3/31    | fd00::10:1:2:3/127    |
 | Spine-2  | Eth3        | 10.1.2.4/31    | fd00::10:1:2:4/127    | Leaf-3   | Eth2        | 10.1.2.5/31    | fd00::10:1:2:5/127    |
 | Spine-2  | Eth4        | 10.1.2.6/31    | fd00::10:1:2:6/127    | Leaf-4   | Eth2        | 10.1.2.7/31    | fd00::10:1:2:7/127    |
@@ -380,338 +380,169 @@ links:
 
 ### Проверка работы
 
-Именно в этом этапе и пришла идея засунуть в vrf хосты(сервера), чтобы можно было смотреть и показывать таблицы роутинга без перемешивания. Исходя из топологии у нас все хосты должны видеть друг друга, включая interface vlan на всех коммутаторах. 
-
+Первым делом убеждаемся что есть пинги, пожалуй пришло время вписывать автотесты. Для этого в файл топологии добавляем блок validate  
 
 <details>
-  <summary>h1 pings </summary>
+  <summary> блок validate </summary>
+  
+  ```txt  
+validate:
+  wait:
+    description: Waiting for stabilize
+    wait: 45
+
+  ping1:
+      description: Pinging H2 from H1
+      nodes: [ h1 ]
+      devices: [ linux ]
+      exec: ping -c 10 h2 -A
+      valid: |
+        "64 bytes" in stdout
+
+  ping2:    
+    description: Pinging H4 from H3
+    nodes: [ h3 ]
+    devices: [ linux ]
+    exec: ping -c 10 h3 -A
+    valid: |
+      "64 bytes" in stdout
+
+  ping3:    
+    description: Pinging ipv6 H1 from H2
+    nodes: [ h2 ]
+    devices: [ linux ]
+    exec: ping6 -c 10 h1 -A
+    valid: |
+      "64 bytes" in stdout
+
+  ping4:    
+    description: Pinging ipv6 H3 from H4
+    nodes: [ h4 ]
+    devices: [ linux ]
+    exec: ping6 -c 10 h3 -A
+    valid: |
+      "64 bytes" in stdout
+```
+</details>
+
+И после ввода  `netlab validate` получаем:
+
+<details>
+  <summary> netlab validate </summary>
   
   ```txt  
 
-h1:/# ping h2
-PING h2 (172.16.2.12): 56 data bytes
-64 bytes from 172.16.2.12: seq=0 ttl=62 time=1.160 ms
-64 bytes from 172.16.2.12: seq=1 ttl=62 time=0.931 ms
-^C
---- h2 ping statistics ---
-2 packets transmitted, 2 packets received, 0% packet loss
-round-trip min/avg/max = 0.931/1.045/1.160 ms
-h1:/# ping h3
-PING h3 (172.16.1.13): 56 data bytes
-64 bytes from 172.16.1.13: seq=0 ttl=64 time=1.530 ms
-64 bytes from 172.16.1.13: seq=1 ttl=64 time=1.136 ms
-64 bytes from 172.16.1.13: seq=2 ttl=64 time=1.219 ms
-^C
---- h3 ping statistics ---
-3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 1.136/1.295/1.530 ms
-h1:/# ping h4
-PING h4 (172.16.2.14): 56 data bytes
-64 bytes from 172.16.2.14: seq=0 ttl=62 time=1.763 ms
-64 bytes from 172.16.2.14: seq=1 ttl=62 time=1.621 ms
-64 bytes from 172.16.2.14: seq=2 ttl=62 time=1.800 ms
-^C
---- h4 ping statistics ---
-3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 1.621/1.728/1.800 ms
-h1:/# ping6 h3
-PING h3 (fd00::172:16:1:d): 56 data bytes
-64 bytes from fd00::172:16:1:d: seq=0 ttl=64 time=2.523 ms
-64 bytes from fd00::172:16:1:d: seq=1 ttl=64 time=1.141 ms
-^C
---- h3 ping statistics ---
-2 packets transmitted, 2 packets received, 0% packet loss
-round-trip min/avg/max = 1.141/1.832/2.523 ms
-h1:/# ping6 h2
-PING h2 (fd00::172:16:2:c): 56 data bytes
-64 bytes from fd00::172:16:2:c: seq=0 ttl=62 time=1.904 ms
-64 bytes from fd00::172:16:2:c: seq=1 ttl=62 time=1.125 ms
-64 bytes from fd00::172:16:2:c: seq=2 ttl=62 time=0.879 ms
-^C
---- h2 ping statistics ---
-3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 0.879/1.302/1.904 ms
-h1:/# ping6 h4
-PING h4 (fd00::172:16:2:e): 56 data bytes
-64 bytes from fd00::172:16:2:e: seq=0 ttl=62 time=2.180 ms
-64 bytes from fd00::172:16:2:e: seq=1 ttl=62 time=1.397 ms
-64 bytes from fd00::172:16:2:e: seq=2 ttl=62 time=1.545 ms
-^C
---- h4 ping statistics ---
-3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 1.397/1.707/2.180 ms
-h1:/# ping 172.16.1.100
-PING 172.16.1.100 (172.16.1.100): 56 data bytes
-64 bytes from 172.16.1.100: seq=0 ttl=64 time=0.115 ms
-64 bytes from 172.16.1.100: seq=1 ttl=64 time=0.098 ms
-^C
---- 172.16.1.100 ping statistics ---
-2 packets transmitted, 2 packets received, 0% packet loss
-round-trip min/avg/max = 0.098/0.106/0.115 ms
-h1:/# ping 172.16.2.100
-PING 172.16.2.100 (172.16.2.100): 56 data bytes
-64 bytes from 172.16.2.100: seq=0 ttl=63 time=1.668 ms
-64 bytes from 172.16.2.100: seq=1 ttl=63 time=0.912 ms
-64 bytes from 172.16.2.100: seq=2 ttl=63 time=1.198 ms
-^C
---- 172.16.2.100 ping statistics ---
-3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 0.912/1.259/1.668 ms
-h1:/# ping 172.16.1.5
-PING 172.16.1.5 (172.16.1.5): 56 data bytes
-64 bytes from 172.16.1.5: seq=0 ttl=63 time=1.136 ms
-64 bytes from 172.16.1.5: seq=1 ttl=63 time=1.136 ms
-^C
---- 172.16.1.5 ping statistics ---
-2 packets transmitted, 2 packets received, 0% packet loss
-round-trip min/avg/max = 1.136/1.136/1.136 ms
-h1:/# ping 172.16.2.4
-PING 172.16.2.4 (172.16.2.4): 56 data bytes
-64 bytes from 172.16.2.4: seq=0 ttl=63 time=1.110 ms
-64 bytes from 172.16.2.4: seq=1 ttl=63 time=1.235 ms
-64 bytes from 172.16.2.4: seq=2 ttl=63 time=0.982 ms
-^C
---- 172.16.2.4 ping statistics ---
-3 packets transmitted, 3 packets received, 0% packet loss
-round-trip min/avg/max = 0.982/1.109/1.235 ms
 
+[wait]    Waiting for stabilize
+
+[ping1]   Pinging H2 from H1 [ node(s): h1 ]
+[PASS]    Validation succeeded on h1
+[PASS]    Test succeeded in 0.1 seconds
+
+[ping2]   Pinging H4 from H3 [ node(s): h3 ]
+[PASS]    Validation succeeded on h3
+[PASS]    Test succeeded in 0.1 seconds
+
+[ping3]   Pinging ipv6 H1 from H2 [ node(s): h2 ]
+[PASS]    Validation succeeded on h2
+[PASS]    Test succeeded in 0.1 seconds
+
+[ping4]   Pinging ipv6 H3 from H4 [ node(s): h4 ]
+[PASS]    Validation succeeded on h4
+[PASS]    Test succeeded in 0.1 seconds
+
+[SUCCESS] Tests passed: 4
 ```
 </details>
 
-С других хостов пинговать смысла наверное нет, т.к. все видят всех, и имеют общую таблицу маршрутизации, вот она с leaf-3(там более показательно так как на нем оба vlan)
+Ну красота же, иногда мне кажется что это какое то читерство, ибо лаба сама себя собирает, сама себя проверяет, единственное над чем приходится корпеть так это правильно написанный yml.
+Смотрим что у нас знает spine-2 о наших хостах.
 
-<details>
-  <summary>leaf-3 show ip route vrf user </summary>
+Учитывая что у нас поднялся evpn и по ipv4 и по ipv6 будет весело но для понимания введем таблицу mac для устройств
 
-```text
+|Host| MAC                | ipv4           | ipv6                 | ipv6 local                   | vlan  | vni     |
+|----|--------------------|----------------|----------------------|------------------------------|-------|---------|
+| h1 | aa:c1:ab:31:a1:6f  | 172.16.1.11/24 | fd00::172:16:1:b/116 | fe80::a8c1:abff:fe0d:85f0/64 | red   | 101000  |
+| h2 | aa:c1:ab:82:c9:3c  | 172.16.2.12/24 | fd00::172:16:2:c/116 | fe80::a8c1:abff:fea5:c348/64 | red   | 101000  |
+| h3 | aa:c1:ab:e6:14:53  | 172.16.1.13/24 | fd00::172:16:1:d/116 | fe80::a8c1:abff:fecb:d425/64 | blue  | 101001  |
+| h4 | aa:c1:ab:a6:ff:af  | 172.16.2.14/24 | fd00::172:16:2:e/116 | fe80::a8c1:abff:fe60:b145/64 | blue  | 101001  |
 
-l3# show ip route vrf user
-Codes: K - kernel route, C - connected, L - local, S - static,
-       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
-       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
-       f - OpenFabric, t - Table-Direct,
-       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
-       t - trapped, o - offload failure
-
-IPv4 unicast VRF user:
-C * 172.16.1.0/24 [0/1024] is directly connected, varp-40000, weight 1, 00:21:53
-C>* 172.16.1.0/24 is directly connected, vlan1000, weight 1, 00:22:00
-B>* 172.16.1.3/32 [200/0] via 192.168.2.1, tvni-100 onlink, weight 1, 00:21:45
-                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:21:45
-                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:21:45
-                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:21:45
-L>* 172.16.1.5/32 is directly connected, vlan1000, weight 1, 00:22:00
-B>* 172.16.1.11/32 [200/0] via 192.168.2.1, tvni-100 onlink, weight 1, 00:05:21
-                           via 192.168.2.1, tvni-100 onlink, weight 1, 00:05:21
-                           via 192.168.2.1, tvni-100 onlink, weight 1, 00:05:21
-                           via 192.168.2.1, tvni-100 onlink, weight 1, 00:05:21
-L>* 172.16.1.100/32 is directly connected, varp-40000, weight 1, 00:21:53
-C * 172.16.2.0/24 [0/1024] is directly connected, varp-40001, weight 1, 00:21:53
-C>* 172.16.2.0/24 is directly connected, vlan1001, weight 1, 00:22:00
-B>* 172.16.2.4/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:21:45
-                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:21:45
-                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:21:45
-                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:21:45
-L>* 172.16.2.5/32 is directly connected, vlan1001, weight 1, 00:22:00
-B>* 172.16.2.12/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
-                           via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
-                           via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
-                           via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
-L>* 172.16.2.100/32 is directly connected, varp-40001, weight 1, 00:21:53
-
-```
-</details>
-
-Как видим у нас дублируются маршруты, происходит это потому что bgp evpn у нас поднят и на ipv4 и на ipv6. Уж не знаю поднимает ли кто фабрику с dual-stack evpn, но в целом идея интересная. Надо бы попробовать собрать смешанную фабрику где spine-1 ipv4 only, spine-2 ipv6 only, но отложим эксперимент на другой раз.
-Ниже выводы подтверждающие тезис о дублировании
-<details>
-  <summary>leaf-3 show ip route vrf user </summary>
-
-```text
-
-====== убираем evpn peer ipv6 ======
-l3# conf t
-l3(config)# router bgp 65500
-l3(config-router)# address-family l2vpn evpn
-l3(config-router-af)# no neighbor fd00::192:168:1:1 activate
-l3(config-router-af)# no neighbor fd00::192:168:1:2 activate
-l3(config-router-af)# end
-
-======= смотрим evpn пиры и проверяем количество маршрутов =======
-
-l3# show bgp evpn summary
-BGP router identifier 192.168.2.3, local AS number 65500 VRF default vrf-id 0
-BGP table version 0
-RIB entries 15, using 1920 bytes of memory
-Peers 2, using 33 KiB of memory
-
-Neighbor        V         AS   MsgRcvd   MsgSent   TblVer  InQ OutQ  Up/Down State/PfxRcd   PfxSnt Desc
-192.168.1.1     4      65500       662       556       22    0    0 00:26:06           12       12 s1
-192.168.1.2     4      65500       660       555       22    0    0 00:26:06           12       12 s2
-
-Total number of neighbors 2
-l3# show ip route vrf user
-Codes: K - kernel route, C - connected, L - local, S - static,
-       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
-       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
-       f - OpenFabric, t - Table-Direct,
-       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
-       t - trapped, o - offload failure
-
-IPv4 unicast VRF user:
-C * 172.16.1.0/24 [0/1024] is directly connected, varp-40000, weight 1, 00:26:19
-C>* 172.16.1.0/24 is directly connected, vlan1000, weight 1, 00:26:26
-B>* 172.16.1.3/32 [200/0] via 192.168.2.1, tvni-100 onlink, weight 1, 00:00:23
-                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:00:23
-L>* 172.16.1.5/32 is directly connected, vlan1000, weight 1, 00:26:26
-L>* 172.16.1.100/32 is directly connected, varp-40000, weight 1, 00:26:19
-C * 172.16.2.0/24 [0/1024] is directly connected, varp-40001, weight 1, 00:26:19
-C>* 172.16.2.0/24 is directly connected, vlan1001, weight 1, 00:26:26
-B>* 172.16.2.4/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:00:23
-                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:00:23
-L>* 172.16.2.5/32 is directly connected, vlan1001, weight 1, 00:26:26
-L>* 172.16.2.100/32 is directly connected, varp-40001, weight 1, 00:26:19
-
-======= возвращеаем evpn пиры =======
-
-l3# conf t
-l3(config)# router bgp 65500
-l3(config-router)# address-family l2vpn evpn
-l3(config-router-af)# neighbor fd00::192:168:1:2 activate
-l3(config-router-af)# neighbor fd00::192:168:1:1 activate
-l3(config-router-af)# end
-l3# show bgp evpn
-  import-rt  Show import route target
-  route      EVPN route information
-  summary    Summary of BGP neighbor status
-  vni        Show VNI
-l3# show bgp evpn summary
-BGP router identifier 192.168.2.3, local AS number 65500 VRF default vrf-id 0
-BGP table version 0
-RIB entries 15, using 1920 bytes of memory
-Peers 4, using 66 KiB of memory
-
-Neighbor          V         AS   MsgRcvd   MsgSent   TblVer  InQ OutQ  Up/Down State/PfxRcd   PfxSnt Desc
-192.168.1.1       4      65500       683       574       30    0    0 00:26:59           12       12 s1
-192.168.1.2       4      65500       681       573       30    0    0 00:26:59           12       12 s2
-fd00::192:168:1:1 4      65500       705       595       30    0    0 00:00:10           12       12 s1
-fd00::192:168:1:2 4      65500       705       595       30    0    0 00:00:13           12       12 s2
-
-Total number of neighbors 4
-
-l3# show ip route vrf user
-Codes: K - kernel route, C - connected, L - local, S - static,
-       R - RIP, O - OSPF, I - IS-IS, B - BGP, E - EIGRP, N - NHRP,
-       T - Table, v - VNC, V - VNC-Direct, A - Babel, F - PBR,
-       f - OpenFabric, t - Table-Direct,
-       > - selected route, * - FIB route, q - queued, r - rejected, b - backup
-       t - trapped, o - offload failure
-
-IPv4 unicast VRF user:
-C * 172.16.1.0/24 [0/1024] is directly connected, varp-40000, weight 1, 00:38:55
-C>* 172.16.1.0/24 is directly connected, vlan1000, weight 1, 00:39:02
-B>* 172.16.1.3/32 [200/0] via 192.168.2.1, tvni-100 onlink, weight 1, 00:11:59
-                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:11:59
-                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:11:59
-                          via 192.168.2.1, tvni-100 onlink, weight 1, 00:11:59
-L>* 172.16.1.5/32 is directly connected, vlan1000, weight 1, 00:39:02
-L>* 172.16.1.100/32 is directly connected, varp-40000, weight 1, 00:38:55
-C * 172.16.2.0/24 [0/1024] is directly connected, varp-40001, weight 1, 00:38:55
-C>* 172.16.2.0/24 is directly connected, vlan1001, weight 1, 00:39:02
-B>* 172.16.2.4/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:11:59
-                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:11:59
-                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:11:59
-                          via 192.168.2.2, tvni-100 onlink, weight 1, 00:11:59
-L>* 172.16.2.5/32 is directly connected, vlan1001, weight 1, 00:39:02
-L>* 172.16.2.100/32 is directly connected, varp-40001, weight 1, 00:38:55
-
-```
-</details>
-
-Все вернулось на свое место. Кстати по умолчанию ipv6 peer для evpn на аристах работать не захотел, пришлось поправить темплейт арист для настройке в файле usr/local/lib/python3.10/dist-packages/netsim/ansible/templates/evpn/eos.j2 
-
-Раз роутинг между хостами заработал, а ведь ради этого и собирались, посмотрим как видят происходящее фабрика.
-
-Вот что показывает spine-1 о наших evpn
 
 <details>
   <summary>spine-1 show evpn </summary>
 
 ```text
-s1#show bgp evpn vni 101000
+s2#show bgp evpn vni 101000
 BGP routing table information for VRF default
-Router identifier 192.168.1.1, local AS number 65500
+Router identifier 192.168.1.2, local AS number 65500
 Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
                     c - Contributing to ECMP, % - Pending best path selection
 Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 172.16.1.3
+ * >Ec    RD: 192.168.2.1:1000 mac-ip aac1.ab31.a16f
                                  192.168.2.1           -       100     0       i
- *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 172.16.1.3
+ *  ec    RD: 192.168.2.1:1000 mac-ip aac1.ab31.a16f
                                  192.168.2.1           -       100     0       i
- * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fd00::172:16:1:3
-                                 192.168.2.1           -       100     0       i
- *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fd00::172:16:1:3
-                                 192.168.2.1           -       100     0       i
- * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fe80::f8c0:10c7:908e:9108
-                                 192.168.2.1           -       100     0       i
- *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fe80::f8c0:10c7:908e:9108
-                                 192.168.2.1           -       100     0       i
- * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 172.16.1.5
+ * >Ec    RD: 192.168.2.2:1000 mac-ip aac1.ab31.a16f
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1000 mac-ip aac1.ab31.a16f
+                                 192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.3:1000 mac-ip aac1.ab82.c93c
                                  192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 172.16.1.5
+ *  ec    RD: 192.168.2.3:1000 mac-ip aac1.ab82.c93c
                                  192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fd00::172:16:1:5
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fd00::172:16:1:5
-                                 192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fe80::5ee8:40ce:592a:2792
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fe80::5ee8:40ce:592a:2792
-                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.4:1000 mac-ip aac1.ab82.c93c
+                                 192.168.2.4           -       100     0       i
+ *  ec    RD: 192.168.2.4:1000 mac-ip aac1.ab82.c93c
+                                 192.168.2.4           -       100     0       i
  * >Ec    RD: 192.168.2.1:1000 imet 192.168.2.1
                                  192.168.2.1           -       100     0       i
  *  ec    RD: 192.168.2.1:1000 imet 192.168.2.1
                                  192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.2:1000 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1000 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i
  * >Ec    RD: 192.168.2.3:1000 imet 192.168.2.3
                                  192.168.2.3           -       100     0       i
  *  ec    RD: 192.168.2.3:1000 imet 192.168.2.3
                                  192.168.2.3           -       100     0       i
-s1#show bgp evpn vni 101001
+ * >Ec    RD: 192.168.2.4:1000 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i
+ *  ec    RD: 192.168.2.4:1000 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i
+
+s2#show bgp evpn vni 101001
 BGP routing table information for VRF default
-Router identifier 192.168.1.1, local AS number 65500
+Router identifier 192.168.1.2, local AS number 65500
 Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
                     c - Contributing to ECMP, % - Pending best path selection
 Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 172.16.2.4
-                                 192.168.2.2           -       100     0       i
- *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 172.16.2.4
-                                 192.168.2.2           -       100     0       i
- * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fd00::172:16:2:4
-                                 192.168.2.2           -       100     0       i
- *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fd00::172:16:2:4
-                                 192.168.2.2           -       100     0       i
- * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fe80::67f9:517b:db31:5bad
-                                 192.168.2.2           -       100     0       i
- *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fe80::67f9:517b:db31:5bad
-                                 192.168.2.2           -       100     0       i
- * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 172.16.2.5
+ * >Ec    RD: 192.168.2.3:1001 mac-ip aac1.aba6.ffaf
                                  192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 172.16.2.5
+ *  ec    RD: 192.168.2.3:1001 mac-ip aac1.aba6.ffaf
                                  192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fd00::172:16:2:5
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fd00::172:16:2:5
-                                 192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fe80::e5c3:2894:3166:e3e0
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fe80::e5c3:2894:3166:e3e0
-                                 192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.4:1001 mac-ip aac1.aba6.ffaf
+                                 192.168.2.4           -       100     0       i
+ *  ec    RD: 192.168.2.4:1001 mac-ip aac1.aba6.ffaf
+                                 192.168.2.4           -       100     0       i
+ * >Ec    RD: 192.168.2.1:1001 mac-ip aac1.abe6.1453
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1001 mac-ip aac1.abe6.1453
+                                 192.168.2.1           -       100     0       i
+ * >Ec    RD: 192.168.2.2:1001 mac-ip aac1.abe6.1453
+                                 192.168.2.2           -       100     0       i
+ *  ec    RD: 192.168.2.2:1001 mac-ip aac1.abe6.1453
+                                 192.168.2.2           -       100     0       i
+ * >Ec    RD: 192.168.2.1:1001 imet 192.168.2.1
+                                 192.168.2.1           -       100     0       i
+ *  ec    RD: 192.168.2.1:1001 imet 192.168.2.1
+                                 192.168.2.1           -       100     0       i
  * >Ec    RD: 192.168.2.2:1001 imet 192.168.2.2
                                  192.168.2.2           -       100     0       i
  *  ec    RD: 192.168.2.2:1001 imet 192.168.2.2
@@ -720,328 +551,554 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  192.168.2.3           -       100     0       i
  *  ec    RD: 192.168.2.3:1001 imet 192.168.2.3
                                  192.168.2.3           -       100     0       i
+ * >Ec    RD: 192.168.2.4:1001 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i
+ *  ec    RD: 192.168.2.4:1001 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i
+```
 
-s1#show bgp evpn vni 10000
+  </details>
+
+В целом l2 vni мы отработали в 5й лабороторной, поэтому смотрим на наши mlag
+
+<details>
+  <summary>leaf-1 leaf-2 show mlag detail </summary>
+
+```text
+=======leaf-2=========
+
+l2#show mlag detail
+MLAG Configuration:
+domain-id                          :               mlag1
+local-interface                    :            Vlan4094
+peer-address                       :       169.254.127.0
+peer-link                          :    Port-Channel4094
+hb-peer-address                    :             0.0.0.0
+peer-config                        :          consistent
+
+MLAG Status:
+state                              :              Active
+negotiation status                 :           Connected
+peer-link status                   :                  Up
+local-int status                   :                  Up
+system-id                          :   02:1c:73:34:45:3a
+dual-primary detection             :            Disabled
+dual-primary interface errdisabled :               False
+
+MLAG Ports:
+Disabled                           :                   0
+Configured                         :                   0
+Inactive                           :                   0
+Active-partial                     :                   0
+Active-full                        :                   2
+
+MLAG Detailed Status:
+State                           :             primary
+Peer State                      :           secondary
+State changes                   :                   2
+Last state change time          :         0:20:51 ago
+Hardware ready                  :                True
+Failover                        :               False
+Failover Cause(s)               :             Unknown
+Last failover change time       :               never
+Secondary from failover         :               False
+Peer MAC address                :   00:1c:73:43:43:66
+Peer MAC routing supported      :               False
+Reload delay                    :         300 seconds
+Non-MLAG reload delay           :         300 seconds
+Peer ports errdisabled          :               False
+Lacp standby                    :               False
+Configured heartbeat interval   :             4000 ms
+Effective heartbeat interval    :             4000 ms
+Heartbeat timeout               :            60000 ms
+Last heartbeat timeout          :               never
+Heartbeat timeouts since reboot :                   0
+UDP heartbeat alive             :                True
+Heartbeats sent/received        :             313/314
+Peer monotonic clock offset     :   -0.000096 seconds
+Agent should be running         :                True
+P2p mount state changes         :                   1
+Fast MAC redirection enabled    :               False
+Interface activation interlock  :         unsupported
+
+=======leaf-1=========
+
+l1#show mlag detail
+MLAG Configuration:
+domain-id                          :               mlag1
+local-interface                    :            Vlan4094
+peer-address                       :       169.254.127.1
+peer-link                          :    Port-Channel4094
+hb-peer-address                    :             0.0.0.0
+peer-config                        :          consistent
+
+MLAG Status:
+state                              :              Active
+negotiation status                 :           Connected
+peer-link status                   :                  Up
+local-int status                   :                  Up
+system-id                          :   02:1c:73:34:45:3a
+dual-primary detection             :            Disabled
+dual-primary interface errdisabled :               False
+
+MLAG Ports:
+Disabled                           :                   0
+Configured                         :                   0
+Inactive                           :                   0
+Active-partial                     :                   0
+Active-full                        :                   2
+
+MLAG Detailed Status:
+State                           :           secondary
+Peer State                      :             primary
+State changes                   :                   2
+Last state change time          :         0:21:08 ago
+Hardware ready                  :                True
+Failover                        :               False
+Failover Cause(s)               :             Unknown
+Last failover change time       :               never
+Secondary from failover         :               False
+Peer MAC address                :   00:1c:73:34:45:3a
+Peer MAC routing supported      :               False
+Reload delay                    :         300 seconds
+Non-MLAG reload delay           :         300 seconds
+Ports errdisabled               :               False
+Lacp standby                    :               False
+Configured heartbeat interval   :             4000 ms
+Effective heartbeat interval    :             4000 ms
+Heartbeat timeout               :            60000 ms
+Last heartbeat timeout          :               never
+Heartbeat timeouts since reboot :                   0
+UDP heartbeat alive             :                True
+Heartbeats sent/received        :             317/318
+Peer monotonic clock offset     :    0.000055 seconds
+Agent should be running         :                True
+P2p mount state changes         :                   1
+Fast MAC redirection enabled    :               False
+Interface activation interlock  :         unsupported
+
+```
+</details>
+
+Вот для leaf-3 leaf-4
+
+<details>
+  <summary>leaf-3 leaf-4 show mlag detail </summary>
+
+```text
+
+=======leaf-3=========
+
+l3#show mlag detail
+MLAG Configuration:
+domain-id                          :               mlag2
+local-interface                    :            Vlan4094
+peer-address                       :       169.254.127.1
+peer-link                          :    Port-Channel4094
+hb-peer-address                    :             0.0.0.0
+peer-config                        :          consistent
+
+MLAG Status:
+state                              :              Active
+negotiation status                 :           Connected
+peer-link status                   :                  Up
+local-int status                   :                  Up
+system-id                          :   02:1c:73:3d:6b:db
+dual-primary detection             :            Disabled
+dual-primary interface errdisabled :               False
+
+MLAG Ports:
+Disabled                           :                   0
+Configured                         :                   0
+Inactive                           :                   0
+Active-partial                     :                   0
+Active-full                        :                   2
+
+MLAG Detailed Status:
+State                           :             primary
+Peer State                      :           secondary
+State changes                   :                   2
+Last state change time          :         0:25:52 ago
+Hardware ready                  :                True
+Failover                        :               False
+Failover Cause(s)               :             Unknown
+Last failover change time       :               never
+Secondary from failover         :               False
+Peer MAC address                :   00:1c:73:65:7b:2c
+Peer MAC routing supported      :               False
+Reload delay                    :         300 seconds
+Non-MLAG reload delay           :         300 seconds
+Peer ports errdisabled          :               False
+Lacp standby                    :               False
+Configured heartbeat interval   :             4000 ms
+Effective heartbeat interval    :             4000 ms
+Heartbeat timeout               :            60000 ms
+Last heartbeat timeout          :               never
+Heartbeat timeouts since reboot :                   0
+UDP heartbeat alive             :                True
+Heartbeats sent/received        :             388/389
+Peer monotonic clock offset     :    0.000036 seconds
+Agent should be running         :                True
+P2p mount state changes         :                   1
+Fast MAC redirection enabled    :               False
+Interface activation interlock  :         unsupported
+
+=======leaf-4=========
+
+l4#show mlag detail
+MLAG Configuration:
+domain-id                          :               mlag2
+local-interface                    :            Vlan4094
+peer-address                       :       169.254.127.0
+peer-link                          :    Port-Channel4094
+hb-peer-address                    :             0.0.0.0
+peer-config                        :          consistent
+
+MLAG Status:
+state                              :              Active
+negotiation status                 :           Connected
+peer-link status                   :                  Up
+local-int status                   :                  Up
+system-id                          :   02:1c:73:3d:6b:db
+dual-primary detection             :            Disabled
+dual-primary interface errdisabled :               False
+
+MLAG Ports:
+Disabled                           :                   0
+Configured                         :                   0
+Inactive                           :                   0
+Active-partial                     :                   0
+Active-full                        :                   2
+
+MLAG Detailed Status:
+State                           :           secondary
+Peer State                      :             primary
+State changes                   :                   2
+Last state change time          :         0:26:04 ago
+Hardware ready                  :                True
+Failover                        :               False
+Failover Cause(s)               :             Unknown
+Last failover change time       :               never
+Secondary from failover         :               False
+Peer MAC address                :   00:1c:73:3d:6b:db
+Peer MAC routing supported      :               False
+Reload delay                    :         300 seconds
+Non-MLAG reload delay           :         300 seconds
+Ports errdisabled               :               False
+Lacp standby                    :               False
+Configured heartbeat interval   :             4000 ms
+Effective heartbeat interval    :             4000 ms
+Heartbeat timeout               :            60000 ms
+Last heartbeat timeout          :               never
+Heartbeat timeouts since reboot :                   0
+UDP heartbeat alive             :                True
+Heartbeats sent/received        :             391/392
+Peer monotonic clock offset     :   -0.000049 seconds
+Agent should be running         :                True
+P2p mount state changes         :                   1
+Fast MAC redirection enabled    :               False
+Interface activation interlock  :         unsupported
+
+
+```
+</details>
+
+Со всех сторон хорошо. Теперь нужно понять спасает ли нас эта технология от выхода из строя оборудования или линков. Предлагается следующий сценарий отказов:
+1) Допустим мы проводили работы по обновлению и leaf-1 упал. 1 на картинке
+2) Работы проводили не только мы, но и кто то в кроссе и в результате повредили все аплинки для leaf-3. 2-3 на картинке
+3) День несчастий продолжался и на leaf-4 сгорела интерфейсная плата в сторону серверов. 4-5 на картинке
+
+Все падения будем эмулировать путем перевода в shutdown интерфейсов. Написал сценарий и самому страшно от такого развития событий, представляю в каком шоке был бы мониторинг хД).
+
+![failover](failover.png)
+
+Состояние интерфейсов под катом
+
+<details>
+  <summary>show interface status </summary>
+
+```text
+======= leaf-1 ==========
+
+l1#show interfaces status
+Port       Name                                              Status       Vlan      Duplex Speed  Type            Flags Encapsulation
+Et1        l1 -> s1                                          disabled     routed    full   1G     EbraTestPhyPort
+Et2        l1 -> s2                                          disabled     routed    full   1G     EbraTestPhyPort
+Et3        l1 -> l2                                          disabled     routed    full   1G     EbraTestPhyPort
+Et4        l1 -> l2 (peerlink in channel-group 4094)         disabled     in Po4094 full   1G     EbraTestPhyPort
+Et5        l1 -> h1 in channel-group 1                       disabled     in Po1    full   1G     EbraTestPhyPort
+Et6        l1 -> h3 in channel-group 2                       disabled     in Po2    full   1G     EbraTestPhyPort
+Ma0                                                          connected    routed    a-full a-1G   10/100/1000
+Po1        [Access VLAN red] l1 -> [h1,l2] (part of mlag 1)  notconnect   1000      full   unconf N/A
+Po2        [Access VLAN blue] l1 -> [h3,l2] (part of mlag 2) notconnect   1001      full   unconf N/A
+Po4094     MLAG peerlink(s) l1 -> l2                         notconnect   trunk     full   unconf N/A
+
+======= leaf-2 ==========
+
+l2#show interfaces status
+Port       Name                                              Status       Vlan      Duplex Speed  Type            Flags Encapsulation
+Et1        l2 -> s1                                          connected    routed    full   1G     EbraTestPhyPort
+Et2        l2 -> s2                                          connected    routed    full   1G     EbraTestPhyPort
+Et3        l2 -> l1                                          notconnect   routed    full   1G     EbraTestPhyPort
+Et4        l2 -> l1 (peerlink in channel-group 4094)         notconnect   in Po4094 full   1G     EbraTestPhyPort
+Et5        l2 -> h1 in channel-group 1                       connected    in Po1    full   1G     EbraTestPhyPort
+Et6        l2 -> h3 in channel-group 2                       connected    in Po2    full   1G     EbraTestPhyPort
+Ma0                                                          connected    routed    a-full a-1G   10/100/1000
+Po1        [Access VLAN red] l2 -> [h1,l1] (part of mlag 1)  connected    1000      full   1G     N/A
+Po2        [Access VLAN blue] l2 -> [h3,l1] (part of mlag 2) connected    1001      full   1G     N/A
+Po4094     MLAG peerlink(s) l2 -> l1                         notconnect   trunk     full   unconf N/A
+
+======= leaf-3 ==========
+
+l3#show interfaces status
+Port       Name                                              Status       Vlan      Duplex Speed  Type            Flags Encapsulation
+Et1        l3 -> s1                                          disabled     routed    full   1G     EbraTestPhyPort
+Et2        l3 -> s2                                          disabled     routed    full   1G     EbraTestPhyPort
+Et3        l3 -> l4                                          connected    routed    full   1G     EbraTestPhyPort
+Et4        l3 -> l4 (peerlink in channel-group 4094)         connected    in Po4094 full   1G     EbraTestPhyPort
+Et5        l3 -> h2 in channel-group 2                       connected    in Po2    full   1G     EbraTestPhyPort
+Et6        l3 -> h4 in channel-group 3                       connected    in Po3    full   1G     EbraTestPhyPort
+Ma0                                                          connected    routed    a-full a-1G   10/100/1000
+Po2        [Access VLAN red] l3 -> [l4,h2] (part of mlag 2)  connected    1000      full   1G     N/A
+Po3        [Access VLAN blue] l3 -> [h4,l4] (part of mlag 3) connected    1001      full   1G     N/A
+Po4094     MLAG peerlink(s) l3 -> l4                         connected    trunk     full   1G     N/A
+
+======= leaf-4 ==========
+
+l4#show interfaces status
+Port       Name                                              Status       Vlan      Duplex Speed  Type            Flags Encapsulation
+Et1        l4 -> s1                                          connected    routed    full   1G     EbraTestPhyPort
+Et2        l4 -> s2                                          connected    routed    full   1G     EbraTestPhyPort
+Et3        l4 -> l3                                          connected    routed    full   1G     EbraTestPhyPort
+Et4        l4 -> l3 (peerlink in channel-group 4094)         connected    in Po4094 full   1G     EbraTestPhyPort
+Et5        l4 -> h2 in channel-group 2                       disabled     in Po2    full   1G     EbraTestPhyPort
+Et6        l4 -> h4 in channel-group 3                       disabled     in Po3    full   1G     EbraTestPhyPort
+Ma0                                                          connected    routed    a-full a-1G   10/100/1000
+Po2        [Access VLAN red] l4 -> [l3,h2] (part of mlag 2)  notconnect   1000      full   1G     N/A
+Po3        [Access VLAN blue] l4 -> [h4,l3] (part of mlag 3) notconnect   1001      full   1G     N/A
+Po4094     MLAG peerlink(s) l4 -> l3                         connected    trunk     full   1G     N/A
+
+```
+</details>
+
+
+Прибегаем к чудной команде `netlab validate` и 
+
+```
+[wait]    Waiting for stabilize
+
+[ping1]   Pinging H2 from H1 [ node(s): h1 ]
+[PASS]    Validation succeeded on h1
+[PASS]    Test succeeded in 0.1 seconds
+
+[ping2]   Pinging H4 from H3 [ node(s): h3 ]
+[PASS]    Validation succeeded on h3
+[PASS]    Test succeeded in 0.1 seconds
+
+[ping3]   Pinging ipv6 H1 from H2 [ node(s): h2 ]
+[PASS]    Validation succeeded on h2
+[PASS]    Test succeeded in 0.1 seconds
+
+[ping4]   Pinging ipv6 H3 from H4 [ node(s): h4 ]
+[PASS]    Validation succeeded on h4
+[PASS]    Test succeeded in 0.1 seconds
+
+[SUCCESS] Tests passed: 4
+```
+
+Тесты успешно пройдены, несмотря на все наши старания. Конечно при определенной сноровке еще парой shutdown мы могли бы дошатать этот стенд, но проявим сочувствие и соберем конфигурацию.
+Делается это кстати командой `netlab collect`. Все файлы конфигурации ложатся в папку /config  в директории лабы. 
+Для любителей wireshark вот информация с leaf-4, путем нескольких стартов валидации. На них наглядно видно что трафик ходит в обе стороны при отказах. 
+![ipv4](l4_ipv4.png)
+![ipv6](l4_ipv6.png)
+l4 выбран как тот на котором можно увидеть как трафик будет перетекать в peer-link пытаясь попасть на хосты. 
+![l4_dump_failover](l4_dump_failover.png)
+Где видим что трафик ходит в eth3 и eth4 которые связывают leaf3 и leaf4.  eth3 выступает по факту дополнительным путем для evpn, т.к. у нас ibgp то evpn соседство между leaf-3 и spine не упало, просто установился запасной маршрут, и он отлично вещает и принимает маршруты от всех остальных leaf. eth4 выступает peerlink для работы mlag.
+
+<details>
+  <summary>для интересующихся </summary>
+
+```text
+
+l3#show bgp evpn
 BGP routing table information for VRF default
-Router identifier 192.168.1.1, local AS number 65500
+Router identifier 192.168.2.3, local AS number 65500
 Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
                     c - Contributing to ECMP, % - Pending best path selection
 Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 172.16.1.3
-                                 192.168.2.1           -       100     0       i
- *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 172.16.1.3
-                                 192.168.2.1           -       100     0       i
- * >Ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fd00::172:16:1:3
-                                 192.168.2.1           -       100     0       i
- *  ec    RD: 192.168.2.1:1000 mac-ip 52dc.cafd.0300 fd00::172:16:1:3
-                                 192.168.2.1           -       100     0       i
- * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 172.16.2.4
-                                 192.168.2.2           -       100     0       i
- *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 172.16.2.4
-                                 192.168.2.2           -       100     0       i
- * >Ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fd00::172:16:2:4
-                                 192.168.2.2           -       100     0       i
- *  ec    RD: 192.168.2.2:1001 mac-ip 52dc.cafd.0400 fd00::172:16:2:4
-                                 192.168.2.2           -       100     0       i
- * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 172.16.1.5
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 172.16.1.5
-                                 192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fd00::172:16:1:5
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1000 mac-ip 52dc.cafd.0500 fd00::172:16:1:5
-                                 192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 172.16.2.5
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 172.16.2.5
-                                 192.168.2.3           -       100     0       i
- * >Ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fd00::172:16:2:5
-                                 192.168.2.3           -       100     0       i
- *  ec    RD: 192.168.2.3:1001 mac-ip 52dc.cafd.0501 fd00::172:16:2:5
-                                 192.168.2.3           -       100     0       i
- * >      RD: 65500:1 ip-prefix 172.16.1.0/24
-                                 192.168.2.1           0       100     0       ?
- *        RD: 65500:1 ip-prefix 172.16.1.0/24
-                                 192.168.2.1           0       100     0       ?
- *        RD: 65500:1 ip-prefix 172.16.1.0/24
-                                 192.168.2.3           0       100     0       ?
- *        RD: 65500:1 ip-prefix 172.16.1.0/24
-                                 192.168.2.3           0       100     0       ?
- * >      RD: 65500:1 ip-prefix 172.16.2.0/24
-                                 192.168.2.2           0       100     0       ?
- *        RD: 65500:1 ip-prefix 172.16.2.0/24
-                                 192.168.2.2           0       100     0       ?
- *        RD: 65500:1 ip-prefix 172.16.2.0/24
-                                 192.168.2.3           0       100     0       ?
- *        RD: 65500:1 ip-prefix 172.16.2.0/24
-                                 192.168.2.3           0       100     0       ?
- * >      RD: 65500:1 ip-prefix fd00::172:16:1:0/116
-                                 192.168.2.1           0       100     0       ?
- *        RD: 65500:1 ip-prefix fd00::172:16:1:0/116
-                                 192.168.2.1           0       100     0       ?
- *        RD: 65500:1 ip-prefix fd00::172:16:1:0/116
-                                 192.168.2.3           0       100     0       ?
- *        RD: 65500:1 ip-prefix fd00::172:16:1:0/116
-                                 192.168.2.3           0       100     0       ?
- * >      RD: 65500:1 ip-prefix fd00::172:16:2:0/116
-                                 192.168.2.2           0       100     0       ?
- *        RD: 65500:1 ip-prefix fd00::172:16:2:0/116
-                                 192.168.2.2           0       100     0       ?
- *        RD: 65500:1 ip-prefix fd00::172:16:2:0/116
-                                 192.168.2.3           0       100     0       ?
- *        RD: 65500:1 ip-prefix fd00::172:16:2:0/116
-                                 192.168.2.3           0       100     0       ?
+ * >Ec    RD: 192.168.2.2:1000 mac-ip aac1.ab31.a16f
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1000 mac-ip aac1.ab31.a16f
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1000 mac-ip aac1.ab31.a16f
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1000 mac-ip aac1.ab31.a16f
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ * >      RD: 192.168.2.3:1000 mac-ip aac1.ab82.c93c
+                                 -                     -       -       0       i
+ * >Ec    RD: 192.168.2.4:1000 mac-ip aac1.ab82.c93c
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1000 mac-ip aac1.ab82.c93c
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1000 mac-ip aac1.ab82.c93c
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1000 mac-ip aac1.ab82.c93c
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ * >Ec    RD: 192.168.2.2:1000 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1000 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1000 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1000 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ * >Ec    RD: 192.168.2.2:1001 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1001 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1001 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.2:1001 imet 192.168.2.2
+                                 192.168.2.2           -       100     0       i Or-ID: 192.168.2.2 C-LST: 192.168.1.1
+ * >      RD: 192.168.2.3:1000 imet 192.168.2.3
+                                 -                     -       -       0       i
+ * >      RD: 192.168.2.3:1001 imet 192.168.2.3
+                                 -                     -       -       0       i
+ * >Ec    RD: 192.168.2.4:1000 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1000 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1000 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1000 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ * >Ec    RD: 192.168.2.4:1001 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1001 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1001 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+ *  ec    RD: 192.168.2.4:1001 imet 192.168.2.4
+                                 192.168.2.4           -       100     0       i Or-ID: 192.168.2.4 C-LST: 192.168.1.1
+l3# show mlag
+MLAG Configuration:
+domain-id                          :               mlag2
+local-interface                    :            Vlan4094
+peer-address                       :       169.254.127.1
+peer-link                          :    Port-Channel4094
+hb-peer-address                    :             0.0.0.0
+peer-config                        :          consistent
 
-```
+MLAG Status:
+state                              :              Active
+negotiation status                 :           Connected
+peer-link status                   :                  Up
+local-int status                   :                  Up
+system-id                          :   02:1c:73:3d:6b:db
+dual-primary detection             :            Disabled
+dual-primary interface errdisabled :               False
 
-  </details>
+MLAG Ports:
+Disabled                           :                   0
+Configured                         :                   0
+Inactive                           :                   0
+Active-partial                     :                   2
+Active-full                        :                   0
 
-Получается у нас есть 3 vni - 101000, 101001 l2 домен, и 10000 который bindится к vrf user. То есть у нас symmetric IRB.
+l3# show mlag detail
+MLAG Configuration:
+domain-id                          :               mlag2
+local-interface                    :            Vlan4094
+peer-address                       :       169.254.127.1
+peer-link                          :    Port-Channel4094
+hb-peer-address                    :             0.0.0.0
+peer-config                        :          consistent
 
-Вот что мы увидим если заглянем в wireshark на leaf-3
-![l3-dump1](l3-dump1.png) 
-То есть в случае когда у нас идет взаимодействие в рамках одного l2 домена используется 1 vxlan, а когда нужно межвзаимодействие между разными то другой.
-Если честно то я не очень уверен, что это должно работать именно так, но очень похоже на правду. То есть vlan-if и нужные vni мы заводим только на тех leaf к которым подключены хосты непосредственно в них, а для обмена между ними заводим ip-vrf который и будет маршрутизировать трафик между разными vxlan. 
+MLAG Status:
+state                              :              Active
+negotiation status                 :           Connected
+peer-link status                   :                  Up
+local-int status                   :                  Up
+system-id                          :   02:1c:73:3d:6b:db
+dual-primary detection             :            Disabled
+dual-primary interface errdisabled :               False
 
-посмотрим в таблицу evpn маршрутов на leaf-1
+MLAG Ports:
+Disabled                           :                   0
+Configured                         :                   0
+Inactive                           :                   0
+Active-partial                     :                   2
+Active-full                        :                   0
 
-<details>
-  <summary>leaf-1 show bgp evpn route </summary>
-
-```text
-
-l1# show bgp evpn route
-BGP table version is 4, local router ID is 192.168.2.1
-Status codes: s suppressed, d damped, h history, * valid, > best, i - internal
-Origin codes: i - IGP, e - EGP, ? - incomplete
-EVPN type-1 prefix: [1]:[EthTag]:[ESI]:[IPlen]:[VTEP-IP]:[Frag-id]
-EVPN type-2 prefix: [2]:[EthTag]:[MAClen]:[MAC]:[IPlen]:[IP]
-EVPN type-3 prefix: [3]:[EthTag]:[IPlen]:[OrigIP]
-EVPN type-4 prefix: [4]:[ESI]:[IPlen]:[OrigIP]
-EVPN type-5 prefix: [5]:[EthTag]:[IPlen]:[IP]
-
-   Network          Next Hop            Metric LocPrf Weight Path
-                    Extended Community
-====L3 vrf====
-
-Route Distinguisher: 65500:1
- *>  [5]:[0]:[24]:[172.16.1.0]
-                    192.168.2.1(l1)          0         32768 ?
-                    ET:8 RT:65500:1 Rmac:de:3e:3c:f0:75:bc
- *>i [5]:[0]:[24]:[172.16.2.0]
-                    192.168.2.2              0    100      0 ?
-                    RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [5]:[0]:[24]:[172.16.2.0]
-                    192.168.2.2              0    100      0 ?
-                    RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [5]:[0]:[24]:[172.16.2.0]
-                    192.168.2.2              0    100      0 ?
-                    RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [5]:[0]:[24]:[172.16.2.0]
-                    192.168.2.2              0    100      0 ?
-                    RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *>  [5]:[0]:[116]:[fd00::172:16:1:0]
-                    192.168.2.1(l1)          0         32768 ?
-                    ET:8 RT:65500:1 Rmac:de:3e:3c:f0:75:bc
- *>i [5]:[0]:[116]:[fd00::172:16:2:0]
-                    192.168.2.2              0    100      0 ?
-                    RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [5]:[0]:[116]:[fd00::172:16:2:0]
-                    192.168.2.2              0    100      0 ?
-                    RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [5]:[0]:[116]:[fd00::172:16:2:0]
-                    192.168.2.2              0    100      0 ?
-                    RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [5]:[0]:[116]:[fd00::172:16:2:0]
-                    192.168.2.2              0    100      0 ?
-                    RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
-
-====Leaf-1 vlan 1000====
-
-Route Distinguisher: 192.168.2.1:1000
- *>  [2]:[0]:[48]:[52:dc:ca:fd:03:00]:[32]:[172.16.1.3]
-                    192.168.2.1(l1)                    32768 i
-                    ET:8 RT:65000:1000 RT:65500:1 Rmac:de:3e:3c:f0:75:bc
- *>  [2]:[0]:[48]:[52:dc:ca:fd:03:00]:[128]:[fd00::172:16:1:3]
-                    192.168.2.1(l1)                    32768 i
-                    ET:8 RT:65000:1000 RT:65500:1 Rmac:de:3e:3c:f0:75:bc
- *>  [2]:[0]:[48]:[52:dc:ca:fd:03:00]:[128]:[fe80::f8c0:10c7:908e:9108]
-                    192.168.2.1(l1)                    32768 i
-                    ET:8 RT:65000:1000
- *>  [3]:[0]:[32]:[192.168.2.1]
-                    192.168.2.1(l1)                    32768 i
-                    ET:8 RT:65000:1000
-
-====Leaf-2 vlan 1001====
-
-Route Distinguisher: 192.168.2.2:1001
- *>i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[32]:[172.16.2.4]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[32]:[172.16.2.4]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[32]:[172.16.2.4]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[32]:[172.16.2.4]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *>i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fd00::172:16:2:4]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fd00::172:16:2:4]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fd00::172:16:2:4]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fd00::172:16:2:4]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:82:cd:a3:ee:28:04
- *>i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fe80::67f9:517b:db31:5bad]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fe80::67f9:517b:db31:5bad]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fe80::67f9:517b:db31:5bad]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:04:00]:[128]:[fe80::67f9:517b:db31:5bad]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 ET:8
- *>i [3]:[0]:[32]:[192.168.2.2]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [3]:[0]:[32]:[192.168.2.2]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [3]:[0]:[32]:[192.168.2.2]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [3]:[0]:[32]:[192.168.2.2]
-                    192.168.2.2                   100      0 i
-                    RT:65000:1001 ET:8
-====Leaf-3 vlan 1000====
-
-Route Distinguisher: 192.168.2.3:1000
- *>i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[32]:[172.16.1.5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[32]:[172.16.1.5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[32]:[172.16.1.5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[32]:[172.16.1.5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *>i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fd00::172:16:1:5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fd00::172:16:1:5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fd00::172:16:1:5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fd00::172:16:1:5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *>i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fe80::5ee8:40ce:592a:2792]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fe80::5ee8:40ce:592a:2792]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fe80::5ee8:40ce:592a:2792]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:00]:[128]:[fe80::5ee8:40ce:592a:2792]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 ET:8
- *>i [3]:[0]:[32]:[192.168.2.3]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 ET:8
- *=i [3]:[0]:[32]:[192.168.2.3]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 ET:8
- *=i [3]:[0]:[32]:[192.168.2.3]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 ET:8
- *=i [3]:[0]:[32]:[192.168.2.3]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1000 ET:8
-
-====Leaf-3 vlan 1001====
-
-Route Distinguisher: 192.168.2.3:1001
- *>i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[32]:[172.16.2.5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[32]:[172.16.2.5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[32]:[172.16.2.5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[32]:[172.16.2.5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *>i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fd00::172:16:2:5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fd00::172:16:2:5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fd00::172:16:2:5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fd00::172:16:2:5]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 RT:65500:1 ET:8 Rmac:02:b6:43:39:ff:b7
- *>i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fe80::e5c3:2894:3166:e3e0]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fe80::e5c3:2894:3166:e3e0]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fe80::e5c3:2894:3166:e3e0]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [2]:[0]:[48]:[52:dc:ca:fd:05:01]:[128]:[fe80::e5c3:2894:3166:e3e0]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 ET:8
- *>i [3]:[0]:[32]:[192.168.2.3]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [3]:[0]:[32]:[192.168.2.3]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [3]:[0]:[32]:[192.168.2.3]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 ET:8
- *=i [3]:[0]:[32]:[192.168.2.3]
-                    192.168.2.3                   100      0 i
-                    RT:65000:1001 ET:8
-
-Displayed 20 prefixes (62 paths)
+MLAG Detailed Status:
+State                           :             primary
+Peer State                      :           secondary
+State changes                   :                   2
+Last state change time          :         1:35:07 ago
+Hardware ready                  :                True
+Failover                        :               False
+Failover Cause(s)               :             Unknown
+Last failover change time       :               never
+Secondary from failover         :               False
+Peer MAC address                :   00:1c:73:65:7b:2c
+Peer MAC routing supported      :               False
+Reload delay                    :         300 seconds
+Non-MLAG reload delay           :         300 seconds
+Peer ports errdisabled          :               False
+Lacp standby                    :               False
+Configured heartbeat interval   :             4000 ms
+Effective heartbeat interval    :             4000 ms
+Heartbeat timeout               :            60000 ms
+Last heartbeat timeout          :               never
+Heartbeat timeouts since reboot :                   0
+UDP heartbeat alive             :                True
+Heartbeats sent/received        :           1427/1428
+Peer monotonic clock offset     :    0.000041 seconds
+Agent should be running         :                True
+P2p mount state changes         :                   1
+Fast MAC redirection enabled    :               False
+Interface activation interlock  :         unsupported
 
 ```
 </details>
 
-В которой и видим маршруты типов 2 и 3 для l2 vni, и маршрут 5го типа для l3 vni. 
+Видим, что линки mlag  у нас в состоянии Active-partial, ну у соседа то они лежат. И evpn соседство у нас не упало.
+Вот кстати и ospf route со spine-1
+<details>
+  <summary> spine-1 show ip route ospf </summary>
+  
+  ```txt  
+
+ O        10.0.1.2/31 [110/20]
+           via 10.1.1.7, Ethernet4
+ O        10.1.2.2/31 [110/20]
+           via 10.1.1.3, Ethernet2
+ O        10.1.2.6/31 [110/20]
+           via 10.1.1.7, Ethernet4
+ O        192.168.1.2/32 [110/30]
+           via 10.1.1.3, Ethernet2
+           via 10.1.1.7, Ethernet4
+ O        192.168.2.2/32 [110/20]
+           via 10.1.1.3, Ethernet2
+ O        192.168.2.3/32 [110/30]
+           via 10.1.1.7, Ethernet4
+ O        192.168.2.4/32 [110/20]
+           via 10.1.1.7, Ethernet4
+
+```
+</details>
+
+Видим что у нас loopback leaf-3 (192.168.2.3) c ценой маршрута 30. leaf-1(192.168.2.1) вообще не отсвечивает.  
 
 
-Конфигурационные файлы устройств:  
+Конфигурационные файлы устройств(с поднятыми интерфейсами) :  
 ![Leaf-1](./l1.cfg)
 ![Leaf-2](./l2.cfg)
 ![Leaf-3](./l3.cfg)
+![Leaf-4](./l4.cfg)
 ![Spine-1](./s1.cfg)
 ![Spine-2](./s2.cfg)
 
