@@ -1,0 +1,32 @@
+ip prefix-list VRFs seq 10 permit 172.16.0.0/16 le 24
+
+ipv6 prefix-list VRFs_v6 seq 10 permit fd00::/64 le 126
+
+!
+route-map STRIP-AS permit 10
+ set as-path exclude all
+exit
+!
+route-map VRFs permit 10
+ match ip address prefix-list VRFs
+exit
+!
+route-map VRFs permit 20
+ match ipv6 address prefix-list VRFs_v6
+exit
+!
+router bgp 65100
+ address-family ipv4 unicast
+  neighbor 10.0.5.0 route-map STRIP-AS in
+  neighbor 10.0.5.0 route-map VRFs out
+  neighbor 10.0.5.2 route-map STRIP-AS in
+  neighbor 10.0.5.2 route-map VRFs out
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  neighbor fd00::10:0:5:0 route-map STRIP-AS in
+  neighbor fd00::10:0:5:0 route-map VRFs out
+  neighbor fd00::10:0:5:2 route-map STRIP-AS in
+  neighbor fd00::10:0:5:2 route-map VRFs out
+ exit-address-family
+exit
