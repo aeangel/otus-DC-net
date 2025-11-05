@@ -6,3 +6,5 @@
 * [lab04](lab04/README.md)
 * [lab05](lab05/README.md)
 * [lab06](lab06/README.md)
+* [lab07](lab07/README.md)
+* [lab08](lab08/README.md)
