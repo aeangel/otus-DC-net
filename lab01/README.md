@@ -1,4 +1,4 @@
-# lab01
+# lab01-basic-CLOS
 
 #### Задание
 
@@ -6,7 +6,7 @@
 
 #### Схема стенда
 
-![stand-plan](lab01/stand-plan.png)
+![stand-plan](stand-plan.png)
 
 Стенд делаем по принципу - хосты linux, leaf - frr, spine - arista
 
@@ -51,7 +51,7 @@ loopback table
 
 Так как у самурая только путь, делаем все в netlab-tools.
 
-<img src="lab01/topology.yml" alt="конфиг файл" data-size="original"> или под катом
+<img src="topology.yml" alt="конфиг файл" data-size="original"> или под катом
 
 <details>
 

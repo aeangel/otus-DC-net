@@ -11,8 +11,7 @@
 
 ## Работа с netlab
 
-* [Простые топологии](docs/05_simple_topo.md)
-* [Сложные топологии](docs/06_advanced_topo.md)
+* [Простая топология](docs/05_simple_topo.md)
 * [Дополнительные инструменты](rabota-s-netlab/dopolnitelnye-instrumenty.md)
 
 ## Лабораторные выполненые в рамках курса
