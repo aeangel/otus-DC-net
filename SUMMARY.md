@@ -7,7 +7,7 @@
 * [Intro](docs/01_intro.md)
 * [Quick start](docs/02_quickstart.md)
 * [Терминология](docs/03_terms.md)
-* [Список команд](docs/04_command_list.md)
+* [Список базовых команд](docs/04_command_list.md)
 
 ## Работа с netlab
 

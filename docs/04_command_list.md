@@ -1,29 +1,27 @@
-# Список команд
+# Список базовых команд
 
-**netlab up** : Uses [**netlab create**](https://netlab.tools/netlab/create/) to create configuration files, starts the virtual lab, and uses [**netlab initial**](https://netlab.tools/netlab/initial/) to deploy device configurations, including IP addressing, LLDP, OSPF, BGP, IS-IS, EIGRP, VRRP, VLANs, VRFs, MPLS, SR-MPLS, VXLAN, EVPN, and SRv6. [More details](https://netlab.tools/netlab/up/)
+**netlab up** - включение стенда с автоматичемк выполнением **netlab create**(создание стенда) и  **netlab initial** (настройка устройств и применение конфигураций)&#x20;
 
-**netlab down** : Destroys the virtual lab. [More details](https://netlab.tools/netlab/down/)
+**netlab down** - выключает стенд и удаляет устройства
 
-**netlab restart** : Restart and/or reconfigure the virtual lab. [More details](https://netlab.tools/netlab/restart/)
+**netlab restart** - перезапуск стенда (выключение и включение с перечитыванием topology.yml)
 
-**netlab config** : [Applies additional Jinja2 configuration templates](https://netlab.tools/netlab/config/) to network devices.
+**netlab config** - выполняет дополнительную настройку устройств по заданным template
 
-**netlab collect** : Using Ansible fact gathering or other device-specific Ansible modules, [collects device configurations](https://netlab.tools/netlab/collect/) and saves them in the specified directory (default: **config**).
+**netlab collect** - сбор и сохранение файлов конфигурации устройств (по умолчанию в папку config)&#x20;
 
-**netlab connect** : Use SSH or **docker exec** to [connect to a lab device](https://netlab.tools/netlab/connect/) using device names, management network IP addresses (**ansible\_host**), SSH port, and username/passwords specified in lab topology or _netlab_ device defaults.
+**netlab connect** - подключение к cli-интерфейсу устройств стенда с использованием **ssh** или **docker** **exec** по имени устройства, через выделенную сеть управления&#x20;
 
-**netlab exec** : Use SSH or **docker exec** to [execute a command on one or more network devices](https://netlab.tools/netlab/exec/) using device names, management network IP addresses (**ansible\_host**), SSH port, and username/passwords specified in lab topology or _netlab_ device defaults.
+**netlab exec -** выполнение команд на устройствах стенда с использованием **ssh** или **docker** **exec** по имени устройства, через выделенную сеть управления&#x20;
 
-**netlab capture** : [Perform packet capture](https://netlab.tools/netlab/capture/) on VM- and container interfaces
+**netlab validate** выполнение проверочных тестов в автоматическом режиме на устройствах стенда
 
-**netlab tc** : Disable, enable, display, or modify [link impairment](https://netlab.tools/links/#links-netem) parameters
+**netlab capture** - захват пакетов на интерфейсах с выводом в консоль
 
-**netlab report** : Creates a report from the transformed lab topology data. [More details](https://netlab.tools/netlab/report/)
+**netlab show** - просмотр параметров в  форматах json, txt
 
-**netlab graph** : Creates a lab topology graph description in Graphviz or D2 format. [More details](https://netlab.tools/netlab/graph/)
+**netlab defaults** - просмотр и управление параметрами по умолчанию для запускаемых стендов
 
-**netlab show** : Display system settings in tabular, text, or YAML format. [More details](https://netlab.tools/netlab/show/)
+Есть и другие команды, подробно о текущих включая синтаксис и других командах рекомендую ознакомиться на сайте [CLI Overview](https://netlab.tools/cli-overview/)
 
-**netlab defaults** : Display and manage system defaults. [More details](https://netlab.tools/netlab/defaults/)
-
-**netlab usage** : Display and manage usage statistics. [More details](https://netlab.tools/netlab/usage/)
+Также всегда можно ввести `netlab help` или нужную команду с флагом `-h` для получения справки.
