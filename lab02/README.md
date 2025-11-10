@@ -55,7 +55,7 @@ loopback
 Заметки по лабе:\
 Для ospf включаем шифрование для подключений leaf-spine, пароли spine1, spine2 соответсвенно. Clear-text password используем т.к. netlab не может работать с md5 для frr, но так как аутентификация нам нужна для подстраховки от ошибки, не критично использование открытого пароля. Также включаем bfd для интерфейсов, таймеры явно получатся завышенными, но моя практика показывает что для виртуальных устройств лучше не использовать значения меньше 500 мс, поэтому не критично.
 
-![конфиг файл](https://github.com/aeangel/otus-DC-net/blob/main/lab02/topology.yml) или под катом
+![конфиг файл](topology.yml) или под катом
 
 <details>
 
@@ -563,4 +563,6 @@ round-trip min/avg/max = 0.097/0.113/0.128 ms
 </details>
 
 Конфигурационные файлы устройств:\
-![Leaf-1](https://github.com/aeangel/otus-DC-net/blob/main/lab02/l1.conf) ![Leaf-2](l2.conf) ![Leaf-3](l3.conf) ![Spine-1](s1.conf) ![Spine-2](s2.conf) ![test](https://github.com/aeangel/otus-DC-net/blob/main/lab02/test.txt) 
+![Leaf-1](l1.conf) ![Leaf-2](l2.conf) ![Leaf-3](l3.conf) ![Spine-1](s1.conf) ![Spine-2](s2.conf) ![test](test.txt)&#x20;
+
+![Leaf-1](l1.conf)
