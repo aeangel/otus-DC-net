@@ -563,4 +563,4 @@ round-trip min/avg/max = 0.097/0.113/0.128 ms
 </details>
 
 Конфигурационные файлы устройств:\
-![Leaf-1](https://github.com/aeangel/otus-DC-net/blob/main/lab02/l1.conf) ![Leaf-2](l2.conf) ![Leaf-3](l3.conf) ![Spine-1](s1.conf) ![Spine-2](s2.conf) ![test](test.txt) 
+![Leaf-1](https://github.com/aeangel/otus-DC-net/blob/main/lab02/l1.conf) ![Leaf-2](l2.conf) ![Leaf-3](l3.conf) ![Spine-1](s1.conf) ![Spine-2](s2.conf) ![test](https://github.com/aeangel/otus-DC-net/blob/main/lab02/test.txt) 
