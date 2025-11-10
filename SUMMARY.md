@@ -1,5 +1,7 @@
 # Table of contents
 
+* [README](README.md)
+
 ## Введение
 
 * [Intro](docs/01_intro.md)
