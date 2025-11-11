@@ -1,85 +1,72 @@
-### Задание VXLAN. Multihoming
+# lab07-VxLAN\&M-LAG
 
+#### Задание VXLAN. Multihoming
 
-Цель:
-Настроить отказоустойчивое подключение клиентов с использованием EVPN Multihoming.
+Цель: Настроить отказоустойчивое подключение клиентов с использованием EVPN Multihoming.
 
+Описание/Пошаговая инструкция выполнения домашнего задания: В этой самостоятельной работе мы ожидаем, что вы самостоятельно:
 
-Описание/Пошаговая инструкция выполнения домашнего задания:
-В этой самостоятельной работе мы ожидаем, что вы самостоятельно:
+Подключите клиентов 2-я линками к различным Leaf Настроите агрегированный канал со стороны клиента Настроите multihoming для работы в Overlay сети. Если используете Cisco NXOS - vPC, если иной вендор - то ESI LAG (либо MC-LAG с поддержкой VXLAN) Зафиксируете в документации - план работы, адресное пространство, схему сети, конфигурацию устройств Опционально - протестировать отказоустойчивость - убедиться, что связнность не теряется при отключении одного из линков
 
-Подключите клиентов 2-я линками к различным Leaf
-Настроите агрегированный канал со стороны клиента
-Настроите multihoming для работы в Overlay сети. Если используете Cisco NXOS - vPC, если иной вендор - то ESI LAG (либо MC-LAG с поддержкой VXLAN)
-Зафиксируете в документации - план работы, адресное пространство, схему сети, конфигурацию устройств
-Опционально - протестировать отказоустойчивость - убедиться, что связнность не теряется при отключении одного из линков
-
-### Схема стенда
+#### Схема стенда
 
 ![stand-plan](stand-plan.png)
 
-В силу ограничений функционала frr меняем "вендора" leaf на arista, все же frr это роутер, функционал свитчей в них выполняется через средства linux. И mlag запустить на нем не получилось. В качестве клиента оставляем linux c bond.
-Стенд делаем по принципу - хосты linux, leaf - eos, spine - eos (arista)
+В силу ограничений функционала frr меняем "вендора" leaf на arista, все же frr это роутер, функционал свитчей в них выполняется через средства linux. И mlag запустить на нем не получилось. В качестве клиента оставляем linux c bond. Стенд делаем по принципу - хосты linux, leaf - eos, spine - eos (arista)
 
-### Распределение адресного пространства
+#### Распределение адресного пространства
 
-План составлен с учетом 10.x.y.z, где x - номер DC, y - номер spine, z - по очереди для подключения leaf
-Адреса для хостов - 172.16.x.z/24, где x - номер leaf, z - по порядку адрес хоста, на leaf ip .
-Сеть для построения peerlink 10.0.x.z где x - номер DC, z - по очереди для пары leaf.
-Адреса loopback 192.168.a.b/32, где a - 1 для spine, 2 - для leaf, b - номер spine, leaf по порядку
-Адресацию ipv6 делаем по прицнипу из fd00::[IPv4]
+План составлен с учетом 10.x.y.z, где x - номер DC, y - номер spine, z - по очереди для подключения leaf Адреса для хостов - 172.16.x.z/24, где x - номер leaf, z - по порядку адрес хоста, на leaf ip . Сеть для построения peerlink 10.0.x.z где x - номер DC, z - по очереди для пары leaf. Адреса loopback 192.168.a.b/32, где a - 1 для spine, 2 - для leaf, b - номер spine, leaf по порядку Адресацию ipv6 делаем по прицнипу из fd00::\[IPv4]
 
 Interconnect ipv4 ipv6
 
-| Device A | Interface A | IPv4 A        | IPv6 A               | Device B | Interface B | IPv4 B        | IPv6 B               |
-|----------|-------------|---------------|----------------------|----------|-------------|---------------|----------------------|
-| Spine-1  | Eth1        | 10.1.1.0/31    | fd00::10:1:1:0/127    | Leaf-1   | Eth1        | 10.1.1.1/31    | fd00::10:1:1:1/127    |
-| Spine-1  | Eth2        | 10.1.1.2/31    | fd00::10:1:1:2/127    | Leaf-2   | Eth1        | 10.1.1.3/31    | fd00::10:1:1:3/127    |
-| Spine-1  | Eth3        | 10.1.1.4/31    | fd00::10:1:1:4/127    | Leaf-3   | Eth1        | 10.1.1.5/31    | fd00::10:1:1:5/127    |
-| Spine-1  | Eth4        | 10.1.1.6/31    | fd00::10:1:1:6/127    | Leaf-4   | Eth1        | 10.1.1.7/31    | fd00::10:1:1:7/127    |
-| Spine-2  | Eth1        | 10.1.2.0/31    | fd00::10:1:2:0/127    | Leaf-1   | Eth2        | 10.1.2.1/31    | fd00::10:1:2:1/127    |
-| Spine-2  | Eth2        | 10.1.2.2/31    | fd00::10:1:2:2/127    | Leaf-2   | Eth2        | 10.1.2.3/31    | fd00::10:1:2:3/127    |
-| Spine-2  | Eth3        | 10.1.2.4/31    | fd00::10:1:2:4/127    | Leaf-3   | Eth2        | 10.1.2.5/31    | fd00::10:1:2:5/127    |
-| Spine-2  | Eth4        | 10.1.2.6/31    | fd00::10:1:2:6/127    | Leaf-4   | Eth2        | 10.1.2.7/31    | fd00::10:1:2:7/127    |
-| Leaf-1   | Eth3        | 10.0.1.0/31    | fd00::10:0:1:0/127    | Leaf-2   | Eth3        | 10.0.1.1/31    | fd00::10:0:1:1/127    |
-| Leaf-3   | Eth3        | 10.0.1.2/31    | fd00::10:0:1:2/127    | Leaf-4   | Eth3        | 10.0.1.3/31    | fd00::10:0:1:3/127    |
-| Leaf-1   | Eth4        | ------------   | ------------          | Leaf-2   | Eth4        | ------------   | ------------   |
-| Leaf-3   | Eth4        | ------------   | ------------          | Leaf-4   | Eth4        | ------------   | ------------   |
-| Host-1   | Eth1        | 172.16.1.11/24  | fd00::172:16:1:b/116   | Leaf-1   | Eth5        | access vlan red | access vlan red   |
-| Host-1   | Eth2        | 172.16.1.11/24  | fd00::172:16:1:b/116   | Leaf-2   | Eth5        | access vlan red | access vlan red   |
-| Host-2   | Eth1        | 172.16.1.12/24  | fd00::172:16:1:c/116   | Leaf-3   | Eth5        | access vlan red  | access vlan red    |
-| Host-2   | Eth2        | 172.16.1.12/24  | fd00::172:16:1:с/116   | Leaf-4   | Eth5        | access vlan red | access vlan red   | 
-| Host-3   | Eth1        | 172.16.2.13/24  | fd00::172:16:2:d/116   | Leaf-1   | Eth6        | access vlan blue | access vlan blue   |
-| Host-3   | Eth2        | 172.16.2.13/24  | fd00::172:16:2:d/116   | Leaf-2   | Eth6        | access vlan blue | access vlan blue   |
-| Host-4   | Eth1        | 172.16.2.14/24  | fd00::172:16:2:e/116   | Leaf-3   | Eth6        | access vlan blue  | access vlan blue    |
-| Host-4   | Eth2        | 172.16.2.14/24  | fd00::172:16:2:e/116   | Leaf-4   | Eth6        | access vlan blue | access vlan blue   | 
+| Device A | Interface A | IPv4 A         | IPv6 A               | Device B | Interface B | IPv4 B           | IPv6 B             |
+| -------- | ----------- | -------------- | -------------------- | -------- | ----------- | ---------------- | ------------------ |
+| Spine-1  | Eth1        | 10.1.1.0/31    | fd00::10:1:1:0/127   | Leaf-1   | Eth1        | 10.1.1.1/31      | fd00::10:1:1:1/127 |
+| Spine-1  | Eth2        | 10.1.1.2/31    | fd00::10:1:1:2/127   | Leaf-2   | Eth1        | 10.1.1.3/31      | fd00::10:1:1:3/127 |
+| Spine-1  | Eth3        | 10.1.1.4/31    | fd00::10:1:1:4/127   | Leaf-3   | Eth1        | 10.1.1.5/31      | fd00::10:1:1:5/127 |
+| Spine-1  | Eth4        | 10.1.1.6/31    | fd00::10:1:1:6/127   | Leaf-4   | Eth1        | 10.1.1.7/31      | fd00::10:1:1:7/127 |
+| Spine-2  | Eth1        | 10.1.2.0/31    | fd00::10:1:2:0/127   | Leaf-1   | Eth2        | 10.1.2.1/31      | fd00::10:1:2:1/127 |
+| Spine-2  | Eth2        | 10.1.2.2/31    | fd00::10:1:2:2/127   | Leaf-2   | Eth2        | 10.1.2.3/31      | fd00::10:1:2:3/127 |
+| Spine-2  | Eth3        | 10.1.2.4/31    | fd00::10:1:2:4/127   | Leaf-3   | Eth2        | 10.1.2.5/31      | fd00::10:1:2:5/127 |
+| Spine-2  | Eth4        | 10.1.2.6/31    | fd00::10:1:2:6/127   | Leaf-4   | Eth2        | 10.1.2.7/31      | fd00::10:1:2:7/127 |
+| Leaf-1   | Eth3        | 10.0.1.0/31    | fd00::10:0:1:0/127   | Leaf-2   | Eth3        | 10.0.1.1/31      | fd00::10:0:1:1/127 |
+| Leaf-3   | Eth3        | 10.0.1.2/31    | fd00::10:0:1:2/127   | Leaf-4   | Eth3        | 10.0.1.3/31      | fd00::10:0:1:3/127 |
+| Leaf-1   | Eth4        | ------------   | ------------         | Leaf-2   | Eth4        | ------------     | ------------       |
+| Leaf-3   | Eth4        | ------------   | ------------         | Leaf-4   | Eth4        | ------------     | ------------       |
+| Host-1   | Eth1        | 172.16.1.11/24 | fd00::172:16:1:b/116 | Leaf-1   | Eth5        | access vlan red  | access vlan red    |
+| Host-1   | Eth2        | 172.16.1.11/24 | fd00::172:16:1:b/116 | Leaf-2   | Eth5        | access vlan red  | access vlan red    |
+| Host-2   | Eth1        | 172.16.1.12/24 | fd00::172:16:1:c/116 | Leaf-3   | Eth5        | access vlan red  | access vlan red    |
+| Host-2   | Eth2        | 172.16.1.12/24 | fd00::172:16:1:с/116 | Leaf-4   | Eth5        | access vlan red  | access vlan red    |
+| Host-3   | Eth1        | 172.16.2.13/24 | fd00::172:16:2:d/116 | Leaf-1   | Eth6        | access vlan blue | access vlan blue   |
+| Host-3   | Eth2        | 172.16.2.13/24 | fd00::172:16:2:d/116 | Leaf-2   | Eth6        | access vlan blue | access vlan blue   |
+| Host-4   | Eth1        | 172.16.2.14/24 | fd00::172:16:2:e/116 | Leaf-3   | Eth6        | access vlan blue | access vlan blue   |
+| Host-4   | Eth2        | 172.16.2.14/24 | fd00::172:16:2:e/116 | Leaf-4   | Eth6        | access vlan blue | access vlan blue   |
 
 loopback
 
-| Device | Loopback ipv4| loopback ipv6|
-|-------------|---------------|-----------|
-| Spine-1  | 192.168.1.1 | fd00::192:168:1:1 |
-| Spine-2  | 192.168.1.2 | fd00::192:168:1:2 |
-| Leaf-1   | 192.168.2.1 | fd00::192:168:2:1 |
-| Leaf-2   | 192.168.2.2 | fd00::192:168:2:2 |
-| Leaf-3   | 192.168.2.3 | fd00::192:168:2:3 |
-| Leaf-4   | 192.168.2.4 | fd00::192:168:2:4 |
-
+| Device  | Loopback ipv4 | loopback ipv6     |
+| ------- | ------------- | ----------------- |
+| Spine-1 | 192.168.1.1   | fd00::192:168:1:1 |
+| Spine-2 | 192.168.1.2   | fd00::192:168:1:2 |
+| Leaf-1  | 192.168.2.1   | fd00::192:168:2:1 |
+| Leaf-2  | 192.168.2.2   | fd00::192:168:2:2 |
+| Leaf-3  | 192.168.2.3   | fd00::192:168:2:3 |
+| Leaf-4  | 192.168.2.4   | fd00::192:168:2:4 |
 
 Собираем топологию на базе ospf+ibgp. Area ospf 0, bgp as 65500
 
-### Запуск лабараторной в среде netlab
- Особенностей в запуске не было, для того чтобы не мешать в одну кучу сервисы и транспорт, ввел vrf - user в который поместил оба vlan-if что позволит хостам общаться между собой. Так же так как в основном я работаю с решением centralized gateway, когда l3 приземляется на border-leaf, решил попробовать distributed  gateway, чтобы посмотреть как оно настраивается и forwadит.
- Единственное модуль gateway, обеспечивающий работу протоколов fhrp растягивает только ipv4 адрес между оборудованием, попытки подружить его с ipv6 не очень получились.
+#### Запуск лабараторной в среде netlab
 
+Особенностей в запуске не было, для того чтобы не мешать в одну кучу сервисы и транспорт, ввел vrf - user в который поместил оба vlan-if что позволит хостам общаться между собой. Так же так как в основном я работаю с решением centralized gateway, когда l3 приземляется на border-leaf, решил попробовать distributed gateway, чтобы посмотреть как оно настраивается и forwadит. Единственное модуль gateway, обеспечивающий работу протоколов fhrp растягивает только ipv4 адрес между оборудованием, попытки подружить его с ipv6 не очень получились.
 
-![конфиг файл](./topology.yml)
-или под катом
+[Конфиг-файл](topology.yml) или под катом
 
 <details>
-  <summary>topology.yml </summary>
 
-  ```yml
+<summary>topology.yml</summary>
+
+```yml
 ---
 p---
 provider: clab
@@ -89,348 +76,351 @@ plugin: [ bgp.session ]
 #bgp
 bgp.bfd: True
 bgp:
-  as: 65500
-  rr_list: [ s1,s2 ]
-  rr_mesh: False
+as: 65500
+rr_list: [ s1,s2 ]
+rr_mesh: False
 
 tools:
-  edgeshark:
-  graphite:
+edgeshark:
+graphite:
 
 
 nodes:
- s1:
-  device: eos
-  id: 1
-  loopback:
-    ipv4: 192.168.1.1/32
-    ipv6: fd00::192:168:1:1/128
- s2:
-  device: eos
-  id: 2
-  loopback:
-    ipv4: 192.168.1.2/32
-    ipv6: fd00::192:168:1:2/128
- l1:
-  device: eos
-  id: 3
-  loopback:
-    ipv4: 192.168.2.1/32
-    ipv6: fd00::192:168:2:1/128
- l2:
-  device: eos
-  id: 4
-  loopback:
-    ipv4: 192.168.2.2/32
-    ipv6: fd00::192:168:2:2/128
- l3:
-  device: eos
-  id: 5
-  loopback:
-    ipv4: 192.168.2.3/32
-    ipv6: fd00::192:168:2:3/128
- l4:
-  device: eos
-  id: 6
-  loopback:
-    ipv4: 192.168.2.4/32
-    ipv6: fd00::192:168:2:4/128
- h1:
-  id: 11
-  module: [ lag ] 
-  device: linux
- h2:
-  id: 12
-  module: [ lag ] 
-  device: linux
+s1:
+device: eos
+id: 1
+loopback:
+  ipv4: 192.168.1.1/32
+  ipv6: fd00::192:168:1:1/128
+s2:
+device: eos
+id: 2
+loopback:
+  ipv4: 192.168.1.2/32
+  ipv6: fd00::192:168:1:2/128
+l1:
+device: eos
+id: 3
+loopback:
+  ipv4: 192.168.2.1/32
+  ipv6: fd00::192:168:2:1/128
+l2:
+device: eos
+id: 4
+loopback:
+  ipv4: 192.168.2.2/32
+  ipv6: fd00::192:168:2:2/128
+l3:
+device: eos
+id: 5
+loopback:
+  ipv4: 192.168.2.3/32
+  ipv6: fd00::192:168:2:3/128
+l4:
+device: eos
+id: 6
+loopback:
+  ipv4: 192.168.2.4/32
+  ipv6: fd00::192:168:2:4/128
+h1:
+id: 11
+module: [ lag ] 
+device: linux
+h2:
+id: 12
+module: [ lag ] 
+device: linux
 
- h3:
-  id: 13
-  module: [ lag ] 
-  device: linux
- h4:
-  id: 14
-  module: [ lag ] 
-  device: linux
+h3:
+id: 13
+module: [ lag ] 
+device: linux
+h4:
+id: 14
+module: [ lag ] 
+device: linux
 
 #vlan
 vlans:
-  red:
-    mode: bridge
-    prefix:
-      ipv4: 172.16.1.0/24
-      ipv6: fd00::172:16:1:0/116
-  blue:
-    mode: bridge
-    prefix:
-      ipv4: 172.16.2.0/24
-      ipv6: fd00::172:16:2:0/116
+red:
+  mode: bridge
+  prefix:
+    ipv4: 172.16.1.0/24
+    ipv6: fd00::172:16:1:0/116
+blue:
+  mode: bridge
+  prefix:
+    ipv4: 172.16.2.0/24
+    ipv6: fd00::172:16:2:0/116
 
 links:
 #spine1-leaf1,2,3,4
-  - interfaces:
-      - node: s1
-        ifname: eth1
-        ipv4: 10.1.1.0
-        ipv6: fd00::10:1:1:0
-        ospf:
-          password: 'spine1'
-          bfd: true
-      - node: l1
-        ifname: eth1
-        ipv4: 10.1.1.1
-        ipv6: fd00::10:1:1:1
-        ospf:
-          password: 'spine1'
-          bfd: true
-    prefix:
-      ipv4: 10.1.1.0/31
-      ipv6: fd00::10:1:1:0/127
-  - interfaces:
-      - node: s1
-        ifname: eth2
-        ipv4: 10.1.1.2
-        ipv6: fd00::10:1:1:2
-        ospf:
-          password: 'spine1'
-          bfd: true
-      - node: l2
-        ifname: eth1
-        ipv4: 10.1.1.3
-        ipv6: fd00::10:1:1:3
-        ospf:
-          password: 'spine1'
-          bfd: true
-    prefix:
-      ipv4: 10.1.1.2/31
-      ipv6: fd00::10:1:1:2/127
-  - interfaces:
-      - node: s1
-        ifname: eth3
-        ipv4: 10.1.1.4
-        ipv6: fd00::10:1:1:4
-        ospf:
-          password: 'spine1'
-          bfd: true
-      - node: l3
-        ifname: eth1
-        ipv4: 10.1.1.5
-        ipv6: fd00::10:1:1:5
-        ospf:
-          password: 'spine1'
-          bfd: true
-    prefix:
-      ipv4: 10.1.1.4/31
-      ipv6: fd00::10:1:1:4/127
-  - interfaces:
-      - node: s1
-        ifname: eth4
-        ipv4: 10.1.1.6
-        ipv6: fd00::10:1:1:6
-        ospf:
-          password: 'spine1'
-          bfd: true
-      - node: l4
-        ifname: eth1
-        ipv4: 10.1.1.7
-        ipv6: fd00::10:1:1:7
-        ospf:
-          password: 'spine1'
-          bfd: true
-    prefix:
-      ipv4: 10.1.1.6/31
-      ipv6: fd00::10:1:1:6/127
+- interfaces:
+    - node: s1
+      ifname: eth1
+      ipv4: 10.1.1.0
+      ipv6: fd00::10:1:1:0
+      ospf:
+        password: 'spine1'
+        bfd: true
+    - node: l1
+      ifname: eth1
+      ipv4: 10.1.1.1
+      ipv6: fd00::10:1:1:1
+      ospf:
+        password: 'spine1'
+        bfd: true
+  prefix:
+    ipv4: 10.1.1.0/31
+    ipv6: fd00::10:1:1:0/127
+- interfaces:
+    - node: s1
+      ifname: eth2
+      ipv4: 10.1.1.2
+      ipv6: fd00::10:1:1:2
+      ospf:
+        password: 'spine1'
+        bfd: true
+    - node: l2
+      ifname: eth1
+      ipv4: 10.1.1.3
+      ipv6: fd00::10:1:1:3
+      ospf:
+        password: 'spine1'
+        bfd: true
+  prefix:
+    ipv4: 10.1.1.2/31
+    ipv6: fd00::10:1:1:2/127
+- interfaces:
+    - node: s1
+      ifname: eth3
+      ipv4: 10.1.1.4
+      ipv6: fd00::10:1:1:4
+      ospf:
+        password: 'spine1'
+        bfd: true
+    - node: l3
+      ifname: eth1
+      ipv4: 10.1.1.5
+      ipv6: fd00::10:1:1:5
+      ospf:
+        password: 'spine1'
+        bfd: true
+  prefix:
+    ipv4: 10.1.1.4/31
+    ipv6: fd00::10:1:1:4/127
+- interfaces:
+    - node: s1
+      ifname: eth4
+      ipv4: 10.1.1.6
+      ipv6: fd00::10:1:1:6
+      ospf:
+        password: 'spine1'
+        bfd: true
+    - node: l4
+      ifname: eth1
+      ipv4: 10.1.1.7
+      ipv6: fd00::10:1:1:7
+      ospf:
+        password: 'spine1'
+        bfd: true
+  prefix:
+    ipv4: 10.1.1.6/31
+    ipv6: fd00::10:1:1:6/127
 #spine2-leaf1,2,3,4
-  - interfaces:
-      - node: s2
-        ifname: eth1
-        ipv4: 10.1.2.0
-        ipv6: fd00::10:1:2:0
-        ospf:
-          password: 'spine2'
-          bfd: true
-      - node: l1
-        ifname: eth2
-        ipv4: 10.1.2.1
-        ipv6: fd00::10:1:2:1
-        ospf:
-          password: 'spine2'
-          bfd: true
-    prefix:
-      ipv4: 10.1.2.0/31
-      ipv6: fd00::10:1:2:0/127
-  - interfaces:
-      - node: s2
-        ifname: eth2
-        ipv4: 10.1.2.2
-        ipv6: fd00::10:1:2:2
-        ospf:
-          password: 'spine2'
-          bfd: true
-      - node: l2
-        ifname: eth2
-        ipv4: 10.1.2.3
-        ipv6: fd00::10:1:2:3
-        ospf:
-          password: 'spine2'
-          bfd: true
-    prefix:
-      ipv4: 10.1.2.2/31
-      ipv6: fd00::10:1:2:2/127
-  - interfaces:
-      - node: s2
-        ifname: eth3
-        ipv4: 10.1.2.4
-        ipv6: fd00::10:1:2:4
-        ospf:
-          password: 'spine2'
-          bfd: true
-      - node: l3
-        ifname: eth2
-        ipv4: 10.1.2.5
-        ipv6: fd00::10:1:2:5
-        ospf:
-          password: 'spine2'
-          bfd: true
-    prefix:
-      ipv4: 10.1.2.4/31
-      ipv6: fd00::10:1:2:4/127
-  - interfaces:
-      - node: s2
-        ifname: eth4
-        ipv4: 10.1.2.6
-        ipv6: fd00::10:1:2:6
-        ospf:
-          password: 'spine2'
-          bfd: true
-      - node: l4
-        ifname: eth2
-        ipv4: 10.1.2.7
-        ipv6: fd00::10:1:2:7
-        ospf:
-          password: 'spine2'
-          bfd: true
-    prefix:
-      ipv4: 10.1.2.6/31
-      ipv6: fd00::10:1:2:6/127
+- interfaces:
+    - node: s2
+      ifname: eth1
+      ipv4: 10.1.2.0
+      ipv6: fd00::10:1:2:0
+      ospf:
+        password: 'spine2'
+        bfd: true
+    - node: l1
+      ifname: eth2
+      ipv4: 10.1.2.1
+      ipv6: fd00::10:1:2:1
+      ospf:
+        password: 'spine2'
+        bfd: true
+  prefix:
+    ipv4: 10.1.2.0/31
+    ipv6: fd00::10:1:2:0/127
+- interfaces:
+    - node: s2
+      ifname: eth2
+      ipv4: 10.1.2.2
+      ipv6: fd00::10:1:2:2
+      ospf:
+        password: 'spine2'
+        bfd: true
+    - node: l2
+      ifname: eth2
+      ipv4: 10.1.2.3
+      ipv6: fd00::10:1:2:3
+      ospf:
+        password: 'spine2'
+        bfd: true
+  prefix:
+    ipv4: 10.1.2.2/31
+    ipv6: fd00::10:1:2:2/127
+- interfaces:
+    - node: s2
+      ifname: eth3
+      ipv4: 10.1.2.4
+      ipv6: fd00::10:1:2:4
+      ospf:
+        password: 'spine2'
+        bfd: true
+    - node: l3
+      ifname: eth2
+      ipv4: 10.1.2.5
+      ipv6: fd00::10:1:2:5
+      ospf:
+        password: 'spine2'
+        bfd: true
+  prefix:
+    ipv4: 10.1.2.4/31
+    ipv6: fd00::10:1:2:4/127
+- interfaces:
+    - node: s2
+      ifname: eth4
+      ipv4: 10.1.2.6
+      ipv6: fd00::10:1:2:6
+      ospf:
+        password: 'spine2'
+        bfd: true
+    - node: l4
+      ifname: eth2
+      ipv4: 10.1.2.7
+      ipv6: fd00::10:1:2:7
+      ospf:
+        password: 'spine2'
+        bfd: true
+  prefix:
+    ipv4: 10.1.2.6/31
+    ipv6: fd00::10:1:2:6/127
 #l1-l2 
-  - interfaces:
-      - node: l1
-        ifname: eth3
-        ipv4: 10.0.1.0
-        ipv6: fd00::10:0:1:0
-        ospf:
-          password: 'lag1'
-          bfd: true
-      - node: l2
-        ifname: eth3
-        ipv4: 10.0.1.1
-        ipv6: fd00::10:0:1:1
-        ospf:
-          password: 'lag1'
-          bfd: true
-    prefix:
-      ipv4: 10.0.1.0/31
-      ipv6: fd00::10:0:1:0/127
+- interfaces:
+    - node: l1
+      ifname: eth3
+      ipv4: 10.0.1.0
+      ipv6: fd00::10:0:1:0
+      ospf:
+        password: 'lag1'
+        bfd: true
+    - node: l2
+      ifname: eth3
+      ipv4: 10.0.1.1
+      ipv6: fd00::10:0:1:1
+      ospf:
+        password: 'lag1'
+        bfd: true
+  prefix:
+    ipv4: 10.0.1.0/31
+    ipv6: fd00::10:0:1:0/127
 #l3-l4 
-  - interfaces:
-      - node: l3
-        ifname: eth3
-        ipv4: 10.0.1.2
-        ipv6: fd00::10:0:1:2
-        ospf:
-          password: 'lag2'
-          bfd: true
-      - node: l4
-        ifname: eth3
-        ipv4: 10.0.1.3
-        ipv6: fd00::10:0:1:3
-        ospf:
-          password: 'lag2'
-          bfd: true
-    prefix:
-      ipv4: 10.0.1.2/31
-      ipv6: fd00::10:0:1:2/127
+- interfaces:
+    - node: l3
+      ifname: eth3
+      ipv4: 10.0.1.2
+      ipv6: fd00::10:0:1:2
+      ospf:
+        password: 'lag2'
+        bfd: true
+    - node: l4
+      ifname: eth3
+      ipv4: 10.0.1.3
+      ipv6: fd00::10:0:1:3
+      ospf:
+        password: 'lag2'
+        bfd: true
+  prefix:
+    ipv4: 10.0.1.2/31
+    ipv6: fd00::10:0:1:2/127
 #downlink + mlag
-  - lag:
-      members: [l1-l2]
-      mlag.peergroup: 1
-  - lag:
-      members: [l3-l4]
-      mlag.peergroup: 2
-  - lag:
-      members: [h1-l1, h1-l2]
-    vlan.access: red
-  - lag:
-      members: [l3-h2, l4-h2]
-    vlan.access: red
+- lag:
+    members: [l1-l2]
+    mlag.peergroup: 1
+- lag:
+    members: [l3-l4]
+    mlag.peergroup: 2
+- lag:
+    members: [h1-l1, h1-l2]
+  vlan.access: red
+- lag:
+    members: [l3-h2, l4-h2]
+  vlan.access: red
 
-  - lag:
-      members: [h3-l1, h3-l2]
-    vlan.access: blue
-  - lag:
-      members: [h4-l3, h4-l4]
-    vlan.access: blue
+- lag:
+    members: [h3-l1, h3-l2]
+  vlan.access: blue
+- lag:
+    members: [h4-l3, h4-l4]
+  vlan.access: blue
 
 
 
 ```
- </details>
 
-
-### Проверка работы
-
-Первым делом убеждаемся что есть пинги, пожалуй пришло время вписывать автотесты. Для этого в файл топологии добавляем блок validate  
-
-<details>
-  <summary> блок validate </summary>
-  
-  ```txt  
-validate:
-  wait:
-    description: Waiting for stabilize
-    wait: 45
-
-  ping1:
-      description: Pinging H2 from H1
-      nodes: [ h1 ]
-      devices: [ linux ]
-      exec: ping -c 10 h2 -A
-      valid: |
-        "64 bytes" in stdout
-
-  ping2:    
-    description: Pinging H4 from H3
-    nodes: [ h3 ]
-    devices: [ linux ]
-    exec: ping -c 10 h3 -A
-    valid: |
-      "64 bytes" in stdout
-
-  ping3:    
-    description: Pinging ipv6 H1 from H2
-    nodes: [ h2 ]
-    devices: [ linux ]
-    exec: ping6 -c 10 h1 -A
-    valid: |
-      "64 bytes" in stdout
-
-  ping4:    
-    description: Pinging ipv6 H3 from H4
-    nodes: [ h4 ]
-    devices: [ linux ]
-    exec: ping6 -c 10 h3 -A
-    valid: |
-      "64 bytes" in stdout
-```
 </details>
 
-И после ввода  `netlab validate` получаем:
+#### Проверка работы
+
+Первым делом убеждаемся что есть пинги, пожалуй пришло время вписывать автотесты. Для этого в файл топологии добавляем блок validate
 
 <details>
-  <summary> netlab validate </summary>
-  
-  ```txt  
+
+<summary>блок validate</summary>
+
+```txt
+validate:
+wait:
+  description: Waiting for stabilize
+  wait: 45
+
+ping1:
+    description: Pinging H2 from H1
+    nodes: [ h1 ]
+    devices: [ linux ]
+    exec: ping -c 10 h2 -A
+    valid: |
+      "64 bytes" in stdout
+
+ping2:    
+  description: Pinging H4 from H3
+  nodes: [ h3 ]
+  devices: [ linux ]
+  exec: ping -c 10 h3 -A
+  valid: |
+    "64 bytes" in stdout
+
+ping3:    
+  description: Pinging ipv6 H1 from H2
+  nodes: [ h2 ]
+  devices: [ linux ]
+  exec: ping6 -c 10 h1 -A
+  valid: |
+    "64 bytes" in stdout
+
+ping4:    
+  description: Pinging ipv6 H3 from H4
+  nodes: [ h4 ]
+  devices: [ linux ]
+  exec: ping6 -c 10 h3 -A
+  valid: |
+    "64 bytes" in stdout
+```
+
+</details>
+
+И после ввода `netlab validate` получаем:
+
+<details>
+
+<summary>netlab validate</summary>
+
+```txt
 
 
 [wait]    Waiting for stabilize
@@ -453,25 +443,25 @@ validate:
 
 [SUCCESS] Tests passed: 4
 ```
+
 </details>
 
-Ну красота же, иногда мне кажется что это какое то читерство, ибо лаба сама себя собирает, сама себя проверяет, единственное над чем приходится корпеть так это правильно написанный yml.
-Смотрим что у нас знает spine-2 о наших хостах.
+Ну красота же, иногда мне кажется что это какое то читерство, ибо лаба сама себя собирает, сама себя проверяет, единственное над чем приходится корпеть так это правильно написанный yml. Смотрим что у нас знает spine-2 о наших хостах.
 
 Учитывая что у нас поднялся evpn и по ipv4 и по ipv6 будет весело но для понимания введем таблицу mac для устройств
 
-|Host| MAC                | ipv4           | ipv6                 | ipv6 local                   | vlan  | vni     |
-|----|--------------------|----------------|----------------------|------------------------------|-------|---------|
-| h1 | aa:c1:ab:31:a1:6f  | 172.16.1.11/24 | fd00::172:16:1:b/116 | fe80::a8c1:abff:fe0d:85f0/64 | red   | 101000  |
-| h2 | aa:c1:ab:82:c9:3c  | 172.16.2.12/24 | fd00::172:16:2:c/116 | fe80::a8c1:abff:fea5:c348/64 | red   | 101000  |
-| h3 | aa:c1:ab:e6:14:53  | 172.16.1.13/24 | fd00::172:16:1:d/116 | fe80::a8c1:abff:fecb:d425/64 | blue  | 101001  |
-| h4 | aa:c1:ab:a6:ff:af  | 172.16.2.14/24 | fd00::172:16:2:e/116 | fe80::a8c1:abff:fe60:b145/64 | blue  | 101001  |
-
+| Host | MAC               | ipv4           | ipv6                 | ipv6 local                   | vlan | vni    |
+| ---- | ----------------- | -------------- | -------------------- | ---------------------------- | ---- | ------ |
+| h1   | aa:c1:ab:31:a1:6f | 172.16.1.11/24 | fd00::172:16:1:b/116 | fe80::a8c1:abff:fe0d:85f0/64 | red  | 101000 |
+| h2   | aa:c1:ab:82:c9:3c | 172.16.2.12/24 | fd00::172:16:2:c/116 | fe80::a8c1:abff:fea5:c348/64 | red  | 101000 |
+| h3   | aa:c1:ab:e6:14:53 | 172.16.1.13/24 | fd00::172:16:1:d/116 | fe80::a8c1:abff:fecb:d425/64 | blue | 101001 |
+| h4   | aa:c1:ab:a6:ff:af | 172.16.2.14/24 | fd00::172:16:2:e/116 | fe80::a8c1:abff:fe60:b145/64 | blue | 101001 |
 
 <details>
-  <summary>spine-1 show evpn </summary>
 
-```text
+<summary>spine-1 show evpn</summary>
+
+```
 s2#show bgp evpn vni 101000
 BGP routing table information for VRF default
 Router identifier 192.168.1.2, local AS number 65500
@@ -557,14 +547,15 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  192.168.2.4           -       100     0       i
 ```
 
-  </details>
+</details>
 
 В целом l2 vni мы отработали в 5й лабороторной, поэтому смотрим на наши mlag
 
 <details>
-  <summary>leaf-1 leaf-2 show mlag detail </summary>
 
-```text
+<summary>leaf-1 leaf-2 show mlag detail</summary>
+
+```
 =======leaf-2=========
 
 l2#show mlag detail
@@ -678,14 +669,16 @@ Fast MAC redirection enabled    :               False
 Interface activation interlock  :         unsupported
 
 ```
+
 </details>
 
 Вот для leaf-3 leaf-4
 
 <details>
-  <summary>leaf-3 leaf-4 show mlag detail </summary>
 
-```text
+<summary>leaf-3 leaf-4 show mlag detail</summary>
+
+```
 
 =======leaf-3=========
 
@@ -801,12 +794,14 @@ Interface activation interlock  :         unsupported
 
 
 ```
+
 </details>
 
 Со всех сторон хорошо. Теперь нужно понять спасает ли нас эта технология от выхода из строя оборудования или линков. Предлагается следующий сценарий отказов:
-1) Допустим мы проводили работы по обновлению и leaf-1 упал. 1 на картинке
-2) Работы проводили не только мы, но и кто то в кроссе и в результате повредили все аплинки для leaf-3. 2-3 на картинке
-3) День несчастий продолжался и на leaf-4 сгорела интерфейсная плата в сторону серверов. 4-5 на картинке
+
+1. Допустим мы проводили работы по обновлению и leaf-1 упал. 1 на картинке
+2. Работы проводили не только мы, но и кто то в кроссе и в результате повредили все аплинки для leaf-3. 2-3 на картинке
+3. День несчастий продолжался и на leaf-4 сгорела интерфейсная плата в сторону серверов. 4-5 на картинке
 
 Все падения будем эмулировать путем перевода в shutdown интерфейсов. Написал сценарий и самому страшно от такого развития событий, представляю в каком шоке был бы мониторинг хД).
 
@@ -815,9 +810,10 @@ Interface activation interlock  :         unsupported
 Состояние интерфейсов под катом
 
 <details>
-  <summary>show interface status </summary>
 
-```text
+<summary>show interface status</summary>
+
+```
 ======= leaf-1 ==========
 
 l1#show interfaces status
@@ -879,10 +875,10 @@ Po3        [Access VLAN blue] l4 -> [h4,l3] (part of mlag 3) notconnect   1001  
 Po4094     MLAG peerlink(s) l4 -> l3                         connected    trunk     full   1G     N/A
 
 ```
+
 </details>
 
-
-Прибегаем к чудной команде `netlab validate` и 
+Прибегаем к чудной команде `netlab validate` и
 
 ```
 [wait]    Waiting for stabilize
@@ -906,19 +902,21 @@ Po4094     MLAG peerlink(s) l4 -> l3                         connected    trunk 
 [SUCCESS] Tests passed: 4
 ```
 
-Тесты успешно пройдены, несмотря на все наши старания. Конечно при определенной сноровке еще парой shutdown мы могли бы дошатать этот стенд, но проявим сочувствие и соберем конфигурацию.
-Делается это кстати командой `netlab collect`. Все файлы конфигурации ложатся в папку /config  в директории лабы. 
-Для любителей wireshark вот информация с leaf-4, путем нескольких стартов валидации. На них наглядно видно что трафик ходит в обе стороны при отказах. 
-![ipv4](l4_ipv4.png)
-![ipv6](l4_ipv6.png)
-l4 выбран как тот на котором можно увидеть как трафик будет перетекать в peer-link пытаясь попасть на хосты. 
-![l4_dump_failover](l4_dump_failover.png)
-Где видим что трафик ходит в eth3 и eth4 которые связывают leaf3 и leaf4.  eth3 выступает по факту дополнительным путем для evpn, т.к. у нас ibgp то evpn соседство между leaf-3 и spine не упало, просто установился запасной маршрут, и он отлично вещает и принимает маршруты от всех остальных leaf. eth4 выступает peerlink для работы mlag.
+Тесты успешно пройдены, несмотря на все наши старания. Конечно при определенной сноровке еще парой shutdown мы могли бы дошатать этот стенд, но проявим сочувствие и соберем конфигурацию. Делается это кстати командой `netlab collect`. Все файлы конфигурации ложатся в папку /config в директории лабы. Для любителей wireshark вот информация с leaf-4, путем нескольких стартов валидации. На них наглядно видно что трафик ходит в обе стороны при отказах.&#x20;
+
+<figure><img src="l4_ipv4_dump.png" alt=""><figcaption></figcaption></figure>
+
+<figure><img src="l4_ipv6_dump.png" alt=""><figcaption></figcaption></figure>
+
+&#x20;l4 выбран как тот на котором можно увидеть как трафик будет перетекать в peer-link пытаясь попасть на хосты.  Где видим что трафик ходит в eth3 и eth4 которые связывают leaf3 и leaf4. eth3 выступает по факту дополнительным путем для evpn, т.к. у нас ibgp то evpn соседство между leaf-3 и spine не упало, просто установился запасной маршрут, и он отлично вещает и принимает маршруты от всех остальных leaf. eth4 выступает peerlink для работы mlag.
+
+<figure><img src="l4_dump_failover.png" alt=""><figcaption></figcaption></figure>
 
 <details>
-  <summary>для интересующихся </summary>
 
-```text
+<summary>для интересующихся</summary>
+
+```
 
 l3#show bgp evpn
 BGP routing table information for VRF default
@@ -1063,43 +1061,38 @@ Fast MAC redirection enabled    :               False
 Interface activation interlock  :         unsupported
 
 ```
+
 </details>
 
-Видим, что линки mlag  у нас в состоянии Active-partial, ну у соседа то они лежат. И evpn соседство у нас не упало.
-Вот кстати и ospf route со spine-1
-<details>
-  <summary> spine-1 show ip route ospf </summary>
-  
-  ```txt  
+Видим, что линки mlag у нас в состоянии Active-partial, ну у соседа то они лежат. И evpn соседство у нас не упало. Вот кстати и ospf route со spine-1
 
- O        10.0.1.2/31 [110/20]
-           via 10.1.1.7, Ethernet4
- O        10.1.2.2/31 [110/20]
-           via 10.1.1.3, Ethernet2
- O        10.1.2.6/31 [110/20]
-           via 10.1.1.7, Ethernet4
- O        192.168.1.2/32 [110/30]
-           via 10.1.1.3, Ethernet2
-           via 10.1.1.7, Ethernet4
- O        192.168.2.2/32 [110/20]
-           via 10.1.1.3, Ethernet2
- O        192.168.2.3/32 [110/30]
-           via 10.1.1.7, Ethernet4
- O        192.168.2.4/32 [110/20]
-           via 10.1.1.7, Ethernet4
+<details>
+
+<summary>spine-1 show ip route ospf</summary>
+
+```txt
+
+O        10.0.1.2/31 [110/20]
+         via 10.1.1.7, Ethernet4
+O        10.1.2.2/31 [110/20]
+         via 10.1.1.3, Ethernet2
+O        10.1.2.6/31 [110/20]
+         via 10.1.1.7, Ethernet4
+O        192.168.1.2/32 [110/30]
+         via 10.1.1.3, Ethernet2
+         via 10.1.1.7, Ethernet4
+O        192.168.2.2/32 [110/20]
+         via 10.1.1.3, Ethernet2
+O        192.168.2.3/32 [110/30]
+         via 10.1.1.7, Ethernet4
+O        192.168.2.4/32 [110/20]
+         via 10.1.1.7, Ethernet4
 
 ```
+
 </details>
 
-Видим что у нас loopback leaf-3 (192.168.2.3) c ценой маршрута 30. leaf-1(192.168.2.1) вообще не отсвечивает.  
+Видим что у нас loopback leaf-3 (192.168.2.3) c ценой маршрута 30. leaf-1(192.168.2.1) вообще не отсвечивает.
 
-
-Конфигурационные файлы устройств(с поднятыми интерфейсами) :  
-![Leaf-1](./l1.cfg)
-![Leaf-2](./l2.cfg)
-![Leaf-3](./l3.cfg)
-![Leaf-4](./l4.cfg)
-![Spine-1](./s1.cfg)
-![Spine-2](./s2.cfg)
-
-
+Конфигурационные файлы устройств(с поднятыми интерфейсами) :\
+![Leaf-1](l1.cfg) ![Leaf-2](l2.cfg) ![Leaf-3](l3.cfg) ![Leaf-4](l4.cfg) ![Spine-1](s1.cfg) ![Spine-2](s2.cfg)
