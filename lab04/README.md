@@ -1435,4 +1435,4 @@ round-trip min/avg/max = 0.095/0.113/0.123 ms
 </details>
 
 Конфигурационные файлы устройств:\
-![Leaf-1](l1.cfg) ![Leaf-2](l2.cfg) ![Leaf-3](l3.cfg) ![Spine-1](s1.cfg) ![Spine-2](s2.cfg)
+ ![Spine-1](s1.cfg) ![Spine-2](s2.cfg) ![Leaf-1](l1.cfg) ![Leaf-2](l2.cfg) ![Leaf-3](l3.cfg)
