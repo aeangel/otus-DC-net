@@ -1,77 +1,70 @@
-### Задание VxLAN. L3 VNI
+# lab06-VxLAN-L3
 
-Цель:
-Настроить маршрутизацию в рамках Overlay между клиентами.
+#### Задание VxLAN. L3 VNI
 
+Цель: Настроить маршрутизацию в рамках Overlay между клиентами.
 
-Описание/Пошаговая инструкция выполнения домашнего задания:
-В этой самостоятельной работе мы ожидаем, что вы самостоятельно:
+Описание/Пошаговая инструкция выполнения домашнего задания: В этой самостоятельной работе мы ожидаем, что вы самостоятельно:
 
-Настроите каждого клиента в своем VNI
-Настроите маршрутизацию между клиентами.
-Зафиксируете в документации - план работы, адресное пространство, схему сети, конфигурацию устройств
+Настроите каждого клиента в своем VNI Настроите маршрутизацию между клиентами. Зафиксируете в документации - план работы, адресное пространство, схему сети, конфигурацию устройств
 
-### Схема стенда
+#### Схема стенда
 
 ![stand-plan](stand-plan.png)
 
 Стенд делаем по принципу - хосты linux, leaf - frr, spine - eos (arista)
 
-### Распределение адресного пространства для Underlay
+#### Распределение адресного пространства для Underlay
 
-План составлен с учетом 10.x.y.z, где x - номер DC, y - номер spine, z - по очереди для подключения leaf
-Адреса для хостов - 172.16.x.z/24, где x - номер leaf, z - по порядку адрес хоста, на leaf ip .1
-Адреса loopback 192.168.a.b/32, где a - 1 для spine, 2 - для leaf, b - номер spine, leaf по порядку
-Адресацию ipv6 делаем по прицнипу из fd00::[IPv4]
+План составлен с учетом 10.x.y.z, где x - номер DC, y - номер spine, z - по очереди для подключения leaf Адреса для хостов - 172.16.x.z/24, где x - номер leaf, z - по порядку адрес хоста, на leaf ip .1 Адреса loopback 192.168.a.b/32, где a - 1 для spine, 2 - для leaf, b - номер spine, leaf по порядку Адресацию ipv6 делаем по прицнипу из fd00::\[IPv4]
 
 Interconnect ipv4 ipv6
 
-| Device A | Interface A | IPv4 A        | IPv6 A               | Device B | Interface B | IPv4 B        | IPv6 B               |
-|----------|-------------|---------------|----------------------|----------|-------------|---------------|----------------------|
-| Spine-1  | Eth1        | 10.1.1.0/31    | fd00::10:1:1:0/127    | Leaf-1   | Eth1        | 10.1.1.1/31    | fd00::10:1:1:1/127    |
-| Spine-1  | Eth2        | 10.1.1.2/31    | fd00::10:1:1:2/127    | Leaf-2   | Eth1        | 10.1.1.3/31    | fd00::10:1:1:3/127    |
-| Spine-1  | Eth3        | 10.1.1.4/31    | fd00::10:1:1:4/127    | Leaf-3   | Eth1        | 10.1.1.5/31    | fd00::10:1:1:5/127    |
-| Spine-2  | Eth2        | 10.1.2.0/31    | fd00::10:2:1:0/127    | Leaf-1   | Eth2        | 10.1.2.1/31    | fd00::10:2:1:1/127    |
-| Spine-2  | Eth2        | 10.1.2.2/31    | fd00::10:2:1:2/127    | Leaf-2   | Eth2        | 10.1.2.3/31    | fd00::10:2:1:3/127    |
-| Spine-2  | Eth3        | 10.1.2.4/31    | fd00::10:2:1:4/127    | Leaf-3   | Eth2        | 10.1.2.5/31    | fd00::10:2:1:5/127    |
-| Host-1   | Eth1        | 172.16.1.11/24  | fd00::172:16:1:b/116   | Leaf-1   | Eth3        | access vlan red | access vlan red   |
-| Host-2   | Eth1        | 172.16.2.12/24  | fd00::172:16:2:c/116   | Leaf-2   | Eth3        | access vlan blue  | access vlan blue    |
-| Host-3   | Eth1        | 172.16.1.13/24  | fd00::172:16:3:e/116   | Leaf-3   | Eth3        | access vlan red | access vlan red   | 
-| Host-4   | Eth1        | 172.16.2.14/24  | fd00::172:16:4:d/116   | Leaf-3   | Eth4        | access vlan blue  | access vlan blue   |
+| Device A | Interface A | IPv4 A         | IPv6 A               | Device B | Interface B | IPv4 B           | IPv6 B             |
+| -------- | ----------- | -------------- | -------------------- | -------- | ----------- | ---------------- | ------------------ |
+| Spine-1  | Eth1        | 10.1.1.0/31    | fd00::10:1:1:0/127   | Leaf-1   | Eth1        | 10.1.1.1/31      | fd00::10:1:1:1/127 |
+| Spine-1  | Eth2        | 10.1.1.2/31    | fd00::10:1:1:2/127   | Leaf-2   | Eth1        | 10.1.1.3/31      | fd00::10:1:1:3/127 |
+| Spine-1  | Eth3        | 10.1.1.4/31    | fd00::10:1:1:4/127   | Leaf-3   | Eth1        | 10.1.1.5/31      | fd00::10:1:1:5/127 |
+| Spine-2  | Eth2        | 10.1.2.0/31    | fd00::10:2:1:0/127   | Leaf-1   | Eth2        | 10.1.2.1/31      | fd00::10:2:1:1/127 |
+| Spine-2  | Eth2        | 10.1.2.2/31    | fd00::10:2:1:2/127   | Leaf-2   | Eth2        | 10.1.2.3/31      | fd00::10:2:1:3/127 |
+| Spine-2  | Eth3        | 10.1.2.4/31    | fd00::10:2:1:4/127   | Leaf-3   | Eth2        | 10.1.2.5/31      | fd00::10:2:1:5/127 |
+| Host-1   | Eth1        | 172.16.1.11/24 | fd00::172:16:1:b/116 | Leaf-1   | Eth3        | access vlan red  | access vlan red    |
+| Host-2   | Eth1        | 172.16.2.12/24 | fd00::172:16:2:c/116 | Leaf-2   | Eth3        | access vlan blue | access vlan blue   |
+| Host-3   | Eth1        | 172.16.1.13/24 | fd00::172:16:3:e/116 | Leaf-3   | Eth3        | access vlan red  | access vlan red    |
+| Host-4   | Eth1        | 172.16.2.14/24 | fd00::172:16:4:d/116 | Leaf-3   | Eth4        | access vlan blue | access vlan blue   |
 
 loopback
 
-| Device | Loopback ipv4| loopback ipv6|
-|-------------|---------------|-----------|
-| Spine-1  | 192.168.1.1 | fd00::192:168:1:1 |
-| Spine-2  | 192.168.1.2 | fd00::192:168:1:2 |
-| Leaf-1   | 192.168.2.1 | fd00::192:168:2:1 |
-| Leaf-2   | 192.168.2.2 | fd00::192:168:2:2 |
-| Leaf-3   | 192.168.2.3 | fd00::192:168:2:3 |
+| Device  | Loopback ipv4 | loopback ipv6     |
+| ------- | ------------- | ----------------- |
+| Spine-1 | 192.168.1.1   | fd00::192:168:1:1 |
+| Spine-2 | 192.168.1.2   | fd00::192:168:1:2 |
+| Leaf-1  | 192.168.2.1   | fd00::192:168:2:1 |
+| Leaf-2  | 192.168.2.2   | fd00::192:168:2:2 |
+| Leaf-3  | 192.168.2.3   | fd00::192:168:2:3 |
 
 Vlan-if
 
-| Device  |VLAN id | VLANif ipv4   | VLANif ipv6          | VARP ipv4       |
-|---------|--------|---------------|----------------------| ----------------|
-| Leaf-1  | 1000   | 172.16.1.3/24 | fd00::172:16:1:3/116 | 172.16.1.100/24 |
-| Leaf-2  | 1001   | 172.16.2.4/24 | fd00::172:16:2:4/116 | 172.16.2.100/24 |
-| Leaf-3  | 1000   | 172.16.1.5/24 | fd00::172:16:1:5/116 | 172.16.1.100/24 |
-| Leaf-3  | 1001   | 172.16.2.5/24 | fd00::172:16:2:5/116 | 172.16.2.100/24 |
+| Device | VLAN id | VLANif ipv4   | VLANif ipv6          | VARP ipv4       |
+| ------ | ------- | ------------- | -------------------- | --------------- |
+| Leaf-1 | 1000    | 172.16.1.3/24 | fd00::172:16:1:3/116 | 172.16.1.100/24 |
+| Leaf-2 | 1001    | 172.16.2.4/24 | fd00::172:16:2:4/116 | 172.16.2.100/24 |
+| Leaf-3 | 1000    | 172.16.1.5/24 | fd00::172:16:1:5/116 | 172.16.1.100/24 |
+| Leaf-3 | 1001    | 172.16.2.5/24 | fd00::172:16:2:5/116 | 172.16.2.100/24 |
 
 Собираем топологию на базе ospf+ibgp. Area ospf 0, bgp as 65500
 
-### Запуск лабараторной в среде netlab
- Особенностей в запуске не было, для того чтобы не мешать в одну кучу сервисы и транспорт, ввел vrf - user в который поместил оба vlan-if что позволит хостам общаться между собой. Так же так как в основном я работаю с решением centralized gateway, когда l3 приземляется на border-leaf, решил попробовать distributed  gateway, чтобы посмотреть как оно настраивается и forwadит.
- Единственное модуль gateway, обеспечивающий работу протоколов fhrp растягивает только ipv4 адрес между оборудованием, попытки подружить его с ipv6 не очень получились.
+#### Запуск лабараторной в среде netlab
 
+Особенностей в запуске не было, для того чтобы не мешать в одну кучу сервисы и транспорт, ввел vrf - user в который поместил оба vlan-if что позволит хостам общаться между собой. Так же так как в основном я работаю с решением centralized gateway, когда l3 приземляется на border-leaf, решил попробовать distributed gateway, чтобы посмотреть как оно настраивается и forwadит. Единственное модуль gateway, обеспечивающий работу протоколов fhrp растягивает только ipv4 адрес между оборудованием, попытки подружить его с ipv6 не очень получились.
 
-![конфиг файл](./topology.yml)
-или под катом
+[Конфиг-файл](topology.yml) или под катом
 
 <details>
-  <summary>topology.yml </summary>
 
-  ```yml
+<summary>topology.yml</summary>
+
+```yml
 ---
 provider: clab
 module: [ vlan,vxlan,vrf,ospf,bgp,evpn,bfd,gateway ]
@@ -80,10 +73,10 @@ plugin: [ bgp.session ]
 #bgp
 bgp.bfd: True
 bgp:
-  as: 65500
-  rr_list: [ s1,s2 ]
+as: 65500
+rr_list: [ s1,s2 ]
 #mesh false
-  rr_mesh: False
+rr_mesh: False
 gateway.protocol: anycast
 gateway.id: 100
 
@@ -92,232 +85,232 @@ gateway.id: 100
 defaults.interfaces.mtu: 8192
 
 tools:
-  edgeshark:
-  graphite:
+edgeshark:
+graphite:
 
 
 nodes:
- s1:
-  device: eos
-  id: 1
+s1:
+device: eos
+id: 1
 #  bgp.rr: True
-  loopback:
-    ipv4: 192.168.1.1/32
-    ipv6: fd00::192:168:1:1/128
- s2:
-  device: eos
-  id: 2
+loopback:
+  ipv4: 192.168.1.1/32
+  ipv6: fd00::192:168:1:1/128
+s2:
+device: eos
+id: 2
 #  bgp.rr: True
-  loopback:
-    ipv4: 192.168.1.2/32
-    ipv6: fd00::192:168:1:2/128
- l1:
-  device: frr
-  id: 3
-  loopback:
-    ipv4: 192.168.2.1/32
-    ipv6: fd00::192:168:2:1/128
- l2:
-  device: frr
-  id: 4
-  loopback:
-    ipv4: 192.168.2.2/32
-    ipv6: fd00::192:168:2:2/128
- l3:
-  device: frr
-  id: 5
-  loopback:
-    ipv4: 192.168.2.3/32
-    ipv6: fd00::192:168:2:3/128
- h1:
-  id: 11
-  device: linux
- h2:
-  id: 12
-  device: linux
- h3:
-  id: 13
-  device: linux
- h4:
-  id: 14
-  device: linux
+loopback:
+  ipv4: 192.168.1.2/32
+  ipv6: fd00::192:168:1:2/128
+l1:
+device: frr
+id: 3
+loopback:
+  ipv4: 192.168.2.1/32
+  ipv6: fd00::192:168:2:1/128
+l2:
+device: frr
+id: 4
+loopback:
+  ipv4: 192.168.2.2/32
+  ipv6: fd00::192:168:2:2/128
+l3:
+device: frr
+id: 5
+loopback:
+  ipv4: 192.168.2.3/32
+  ipv6: fd00::192:168:2:3/128
+h1:
+id: 11
+device: linux
+h2:
+id: 12
+device: linux
+h3:
+id: 13
+device: linux
+h4:
+id: 14
+device: linux
 
 
 #vrf
 vrfs:
-  user:
-    evpn.transit_vni: 10000
-    ospf: False
+user:
+  evpn.transit_vni: 10000
+  ospf: False
 
 #vlan
 vlans:
-  red:
-    vrf: user
-    gateway: True
-    prefix:
-      ipv4: 172.16.1.0/24
-      ipv6: fd00::172:16:1:0/116
-  blue:
-    vrf: user
-    gateway: True
-    prefix:
-      ipv4: 172.16.2.0/24
-      ipv6: fd00::172:16:2:0/116
+red:
+  vrf: user
+  gateway: True
+  prefix:
+    ipv4: 172.16.1.0/24
+    ipv6: fd00::172:16:1:0/116
+blue:
+  vrf: user
+  gateway: True
+  prefix:
+    ipv4: 172.16.2.0/24
+    ipv6: fd00::172:16:2:0/116
 
 
 links:
 #spine1-leaf1,2,3
-  - interfaces:
-      - node: s1
-        ifname: eth1
-        ipv4: 10.1.1.0
-        ipv6: fd00::10:1:1:0
-        ospf:
-          password: 'spine1'
-          bfd: true
-      - node: l1
-        ifname: eth1
-        ipv4: 10.1.1.1
-        ipv6: fd00::10:1:1:1
-        ospf:
-          password: 'spine1'
-          bfd: true
-    prefix:
-      ipv4: 10.1.1.0/31
-      ipv6: fd00::10:1:1:0/127
-  - interfaces:
-      - node: s1
-        ifname: eth2
-        ipv4: 10.1.1.2
-        ipv6: fd00::10:1:1:2
-        ospf:
-          password: 'spine1'
-          bfd: true
-      - node: l2
-        ifname: eth1
-        ipv4: 10.1.1.3
-        ipv6: fd00::10:1:1:3
-        ospf:
-          password: 'spine1'
-          bfd: true
-    prefix:
-      ipv4: 10.1.1.2/31
-      ipv6: fd00::10:1:1:2/127
-  - interfaces:
-      - node: s1
-        ifname: eth3
-        ipv4: 10.1.1.4
-        ipv6: fd00::10:1:1:4
-        ospf:
-          password: 'spine1'
-          bfd: true
-      - node: l3
-        ifname: eth1
-        ipv4: 10.1.1.5
-        ipv6: fd00::10:1:1:5
-        ospf:
-          password: 'spine1'
-          bfd: true
-    prefix:
-      ipv4: 10.1.1.4/31
-      ipv6: fd00::10:1:1:4/127
+- interfaces:
+    - node: s1
+      ifname: eth1
+      ipv4: 10.1.1.0
+      ipv6: fd00::10:1:1:0
+      ospf:
+        password: 'spine1'
+        bfd: true
+    - node: l1
+      ifname: eth1
+      ipv4: 10.1.1.1
+      ipv6: fd00::10:1:1:1
+      ospf:
+        password: 'spine1'
+        bfd: true
+  prefix:
+    ipv4: 10.1.1.0/31
+    ipv6: fd00::10:1:1:0/127
+- interfaces:
+    - node: s1
+      ifname: eth2
+      ipv4: 10.1.1.2
+      ipv6: fd00::10:1:1:2
+      ospf:
+        password: 'spine1'
+        bfd: true
+    - node: l2
+      ifname: eth1
+      ipv4: 10.1.1.3
+      ipv6: fd00::10:1:1:3
+      ospf:
+        password: 'spine1'
+        bfd: true
+  prefix:
+    ipv4: 10.1.1.2/31
+    ipv6: fd00::10:1:1:2/127
+- interfaces:
+    - node: s1
+      ifname: eth3
+      ipv4: 10.1.1.4
+      ipv6: fd00::10:1:1:4
+      ospf:
+        password: 'spine1'
+        bfd: true
+    - node: l3
+      ifname: eth1
+      ipv4: 10.1.1.5
+      ipv6: fd00::10:1:1:5
+      ospf:
+        password: 'spine1'
+        bfd: true
+  prefix:
+    ipv4: 10.1.1.4/31
+    ipv6: fd00::10:1:1:4/127
 #spine2-leaf1,2,3
-  - interfaces:
-      - node: s2
-        ifname: eth1
-        ipv4: 10.1.2.0
-        ipv6: fd00::10:1:2:0
-        ospf:
-          password: 'spine2'
-          bfd: true
-      - node: l1
-        ifname: eth2
-        ipv4: 10.1.2.1
-        ipv6: fd00::10:1:2:1
-        ospf:
-          password: 'spine2'
-          bfd: true
-    prefix:
-      ipv4: 10.1.2.0/31
-      ipv6: fd00::10:1:2:0/127
-  - interfaces:
-      - node: s2
-        ifname: eth2
-        ipv4: 10.1.2.2
-        ipv6: fd00::10:1:2:2
-        ospf:
-          password: 'spine2'
-          bfd: true
-      - node: l2
-        ifname: eth2
-        ipv4: 10.1.2.3
-        ipv6: fd00::10:1:2:3
-        ospf:
-          password: 'spine2'
-          bfd: true
-    prefix:
-      ipv4: 10.1.2.2/31
-      ipv6: fd00::10:1:2:2/127
-  - interfaces:
-      - node: s2
-        ifname: eth3
-        ipv4: 10.1.2.4
-        ipv6: fd00::10:1:2:4
-        ospf:
-          password: 'spine2'
-          bfd: true
-      - node: l3
-        ifname: eth2
-        ipv4: 10.1.2.5
-        ipv6: fd00::10:1:2:5
-        ospf:
-          password: 'spine2'
-          bfd: true
-    prefix:
-      ipv4: 10.1.2.4/31
-      ipv6: fd00::10:1:2:4/127
+- interfaces:
+    - node: s2
+      ifname: eth1
+      ipv4: 10.1.2.0
+      ipv6: fd00::10:1:2:0
+      ospf:
+        password: 'spine2'
+        bfd: true
+    - node: l1
+      ifname: eth2
+      ipv4: 10.1.2.1
+      ipv6: fd00::10:1:2:1
+      ospf:
+        password: 'spine2'
+        bfd: true
+  prefix:
+    ipv4: 10.1.2.0/31
+    ipv6: fd00::10:1:2:0/127
+- interfaces:
+    - node: s2
+      ifname: eth2
+      ipv4: 10.1.2.2
+      ipv6: fd00::10:1:2:2
+      ospf:
+        password: 'spine2'
+        bfd: true
+    - node: l2
+      ifname: eth2
+      ipv4: 10.1.2.3
+      ipv6: fd00::10:1:2:3
+      ospf:
+        password: 'spine2'
+        bfd: true
+  prefix:
+    ipv4: 10.1.2.2/31
+    ipv6: fd00::10:1:2:2/127
+- interfaces:
+    - node: s2
+      ifname: eth3
+      ipv4: 10.1.2.4
+      ipv6: fd00::10:1:2:4
+      ospf:
+        password: 'spine2'
+        bfd: true
+    - node: l3
+      ifname: eth2
+      ipv4: 10.1.2.5
+      ipv6: fd00::10:1:2:5
+      ospf:
+        password: 'spine2'
+        bfd: true
+  prefix:
+    ipv4: 10.1.2.4/31
+    ipv6: fd00::10:1:2:4/127
 #host1
-  - interfaces:
-      - node: h1
-        ifname: eth1
-      - node: l1
-        ifname: eth3
-        vlan.access: red
+- interfaces:
+    - node: h1
+      ifname: eth1
+    - node: l1
+      ifname: eth3
+      vlan.access: red
 #host2
-  - interfaces:
-      - node: h2
-        ifname: eth1
-      - node: l2
-        ifname: eth3
-        vlan.access: blue
+- interfaces:
+    - node: h2
+      ifname: eth1
+    - node: l2
+      ifname: eth3
+      vlan.access: blue
 #host3
-  - interfaces:
-      - node: h3
-        ifname: eth1
-      - node: l3
-        ifname: eth3
-        vlan.access: red
+- interfaces:
+    - node: h3
+      ifname: eth1
+    - node: l3
+      ifname: eth3
+      vlan.access: red
 #host4
-  - interfaces:
-      - node: h4
-        ifname: eth1
-      - node: l3
-        ifname: eth4
-        vlan.access: blue
+- interfaces:
+    - node: h4
+      ifname: eth1
+    - node: l3
+      ifname: eth4
+      vlan.access: blue
 
 ```
- </details>
 
+</details>
 
-### Проверка работы
+#### Проверка работы
 
-Именно в этом этапе и пришла идея засунуть в vrf хосты(сервера), чтобы можно было смотреть и показывать таблицы роутинга без перемешивания. Исходя из топологии у нас все хосты должны видеть друг друга, включая interface vlan на всех коммутаторах. 
-
+Именно в этом этапе и пришла идея засунуть в vrf хосты(сервера), чтобы можно было смотреть и показывать таблицы роутинга без перемешивания. Исходя из топологии у нас все хосты должны видеть друг друга, включая interface vlan на всех коммутаторах.
 
 <details>
-  <summary>h1 pings </summary>
-  
-  ```txt  
+
+<summary>h1 pings</summary>
+
+```txt
 
 h1:/# ping h2
 PING h2 (172.16.2.12): 56 data bytes
@@ -407,14 +400,16 @@ PING 172.16.2.4 (172.16.2.4): 56 data bytes
 round-trip min/avg/max = 0.982/1.109/1.235 ms
 
 ```
+
 </details>
 
 С других хостов пинговать смысла наверное нет, т.к. все видят всех, и имеют общую таблицу маршрутизации, вот она с leaf-3(там более показательно так как на нем оба vlan)
 
 <details>
-  <summary>leaf-3 show ip route vrf user </summary>
 
-```text
+<summary>leaf-3 show ip route vrf user</summary>
+
+```
 
 l3# show ip route vrf user
 Codes: K - kernel route, C - connected, L - local, S - static,
@@ -451,14 +446,16 @@ B>* 172.16.2.12/32 [200/0] via 192.168.2.2, tvni-100 onlink, weight 1, 00:05:21
 L>* 172.16.2.100/32 is directly connected, varp-40001, weight 1, 00:21:53
 
 ```
+
 </details>
 
-Как видим у нас дублируются маршруты, происходит это потому что bgp evpn у нас поднят и на ipv4 и на ipv6. Уж не знаю поднимает ли кто фабрику с dual-stack evpn, но в целом идея интересная. Надо бы попробовать собрать смешанную фабрику где spine-1 ipv4 only, spine-2 ipv6 only, но отложим эксперимент на другой раз.
-Ниже выводы подтверждающие тезис о дублировании
-<details>
-  <summary>leaf-3 show ip route vrf user </summary>
+Как видим у нас дублируются маршруты, происходит это потому что bgp evpn у нас поднят и на ipv4 и на ipv6. Уж не знаю поднимает ли кто фабрику с dual-stack evpn, но в целом идея интересная. Надо бы попробовать собрать смешанную фабрику где spine-1 ipv4 only, spine-2 ipv6 only, но отложим эксперимент на другой раз. Ниже выводы подтверждающие тезис о дублировании
 
-```text
+<details>
+
+<summary>leaf-3 show ip route vrf user</summary>
+
+```
 
 ====== убираем evpn peer ipv6 ======
 l3# conf t
@@ -557,18 +554,20 @@ L>* 172.16.2.5/32 is directly connected, vlan1001, weight 1, 00:39:02
 L>* 172.16.2.100/32 is directly connected, varp-40001, weight 1, 00:38:55
 
 ```
+
 </details>
 
-Все вернулось на свое место. Кстати по умолчанию ipv6 peer для evpn на аристах работать не захотел, пришлось поправить темплейт арист для настройке в файле usr/local/lib/python3.10/dist-packages/netsim/ansible/templates/evpn/eos.j2 
+Все вернулось на свое место. Кстати по умолчанию ipv6 peer для evpn на аристах работать не захотел, пришлось поправить темплейт арист для настройке в файле usr/local/lib/python3.10/dist-packages/netsim/ansible/templates/evpn/eos.j2
 
 Раз роутинг между хостами заработал, а ведь ради этого и собирались, посмотрим как видят происходящее фабрика.
 
 Вот что показывает spine-1 о наших evpn
 
 <details>
-  <summary>spine-1 show evpn </summary>
 
-```text
+<summary>spine-1 show evpn</summary>
+
+```
 s1#show bgp evpn vni 101000
 BGP routing table information for VRF default
 Router identifier 192.168.1.1, local AS number 65500
@@ -728,21 +727,19 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
 
 ```
 
-  </details>
+</details>
 
 Получается у нас есть 3 vni - 101000, 101001 l2 домен, и 10000 который bindится к vrf user. То есть у нас symmetric IRB.
 
-Вот что мы увидим если заглянем в wireshark на leaf-3
-![l3-dump1](l3-dump1.png) 
-То есть в случае когда у нас идет взаимодействие в рамках одного l2 домена используется 1 vxlan, а когда нужно межвзаимодействие между разными то другой.
-Если честно то я не очень уверен, что это должно работать именно так, но очень похоже на правду. То есть vlan-if и нужные vni мы заводим только на тех leaf к которым подключены хосты непосредственно в них, а для обмена между ними заводим ip-vrf который и будет маршрутизировать трафик между разными vxlan. 
+Вот что мы увидим если заглянем в wireshark на leaf-3 ![l3-dump1](l3-dump1.png) То есть в случае когда у нас идет взаимодействие в рамках одного l2 домена используется 1 vxlan, а когда нужно межвзаимодействие между разными то другой. Если честно то я не очень уверен, что это должно работать именно так, но очень похоже на правду. То есть vlan-if и нужные vni мы заводим только на тех leaf к которым подключены хосты непосредственно в них, а для обмена между ними заводим ip-vrf который и будет маршрутизировать трафик между разными vxlan.
 
 посмотрим в таблицу evpn маршрутов на leaf-1
 
 <details>
-  <summary>leaf-1 show bgp evpn route </summary>
 
-```text
+<summary>leaf-1 show bgp evpn route</summary>
+
+```
 
 l1# show bgp evpn route
 BGP table version is 4, local router ID is 192.168.2.1
@@ -964,16 +961,12 @@ Route Distinguisher: 192.168.2.3:1001
 Displayed 20 prefixes (62 paths)
 
 ```
+
 </details>
 
-В которой и видим маршруты типов 2 и 3 для l2 vni, и маршрут 5го типа для l3 vni. 
+В которой и видим маршруты типов 2 и 3 для l2 vni, и маршрут 5го типа для l3 vni.
+
+Конфигурационные файлы устройств:\
 
 
-Конфигурационные файлы устройств:  
-![Leaf-1](./l1.cfg)
-![Leaf-2](./l2.cfg)
-![Leaf-3](./l3.cfg)
-![Spine-1](./s1.cfg)
-![Spine-2](./s2.cfg)
-
-
+[Spine-1](s1.cfg) [Spine-2](s2.cfg) [Leaf-1](l1.cfg) [Leaf-2](l2.cfg) [Leaf-3](l3.cfg)
