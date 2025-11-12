@@ -9,3 +9,5 @@
 Ознакомительный ролик по возможностям [https://youtu.be/ExPh5jBfKR0?si=L39b\_Zf7CD\_zcgWx](https://youtu.be/ExPh5jBfKR0?si=L39b_Zf7CD_zcgWx)
 
 Сайт проекта containerlab [https://containerlab.dev/](https://containerlab.dev/)
+
+Похожая работа от моего сокурсник  с использованием github codespace  [https://mr-grin93.gitbook.io/netlab-homeworks](https://mr-grin93.gitbook.io/netlab-homeworks)
