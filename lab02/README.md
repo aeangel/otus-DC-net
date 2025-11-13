@@ -8,7 +8,7 @@
 
 ### Схема стенда
 
-![stand-plan](broken-reference)
+![stand-plan](../lab04/stand-plan.png)
 
 Стенд делаем по принципу - хосты linux, leaf - frr, spine - arista
 
