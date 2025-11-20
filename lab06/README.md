@@ -10,7 +10,7 @@
 
 ### Схема стенда
 
-![stand-plan](stand-plan.png)
+![stand-plan](<../.gitbook/assets/stand-plan (3).png>)
 
 Стенд делаем по принципу - хосты linux, leaf - frr, spine - eos (arista)
 
@@ -733,7 +733,7 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
 
 Вот что мы увидим если заглянем в wireshark на leaf-3  То есть в случае когда у нас идет взаимодействие в рамках одного l2 домена используется 1 vxlan, а когда нужно межвзаимодействие между разными то другой. Если честно то я не очень уверен, что это должно работать именно так, но очень похоже на правду. То есть vlan-if и нужные vni мы заводим только на тех leaf к которым подключены хосты непосредственно в них, а для обмена между ними заводим ip-vrf который и будет маршрутизировать трафик между разными vxlan.
 
-<figure><img src="l3-dump1.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/l3-dump1.png" alt=""><figcaption></figcaption></figure>
 
 посмотрим в таблицу evpn маршрутов на leaf-1
 
@@ -968,7 +968,6 @@ Displayed 20 prefixes (62 paths)
 
 В которой и видим маршруты типов 2 и 3 для l2 vni, и маршрут 5го типа для l3 vni.
 
-Конфигурационные файлы устройств:\
-
+Конфигурационные файлы устройств:<br>
 
 [Spine-1](s1.cfg) [Spine-2](s2.cfg) [Leaf-1](l1.cfg) [Leaf-2](l2.cfg) [Leaf-3](l3.cfg)

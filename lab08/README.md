@@ -12,7 +12,7 @@
 
 ### Схема стенда
 
-![stand-plan](stand-plan.png)
+![stand-plan](<../.gitbook/assets/stand-plan (5).png>)
 
 Оставляем leaf на arista, чтобы можно было оставить кусочек m-lag на l1-l2, l4 выступает border leaf, frr делаем внешним роутером В качестве клиента оставляем linux c bond. Стенд делаем по принципу - хосты linux, leaf - eos, spine - eos (arista)
 
@@ -65,7 +65,7 @@ loopback
 
 Так как задание надо читать вдумчиво то по ходу выполнения сделалось 2 лабараторные. 1-я попытка была построена на l2, маршрутизация между хостами работала, r1 был включен по схеме ~~чупа-чупса~~ router-on-stick, если что схема &#x20;
 
-<figure><img src="stand-plan-l2.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/stand-plan-l2.png" alt=""><figcaption></figcaption></figure>
 
 [Конфиг-файл](l2_topology.yml) или под катом
 
@@ -418,7 +418,7 @@ ping4:
 
 Правильная схема к заданию.  Было решено освоить distributed gateway, когда шлюз для каждого домена находится на каждом leaf. Возникли нюансы с обменом маршрутной информацией между vrf leaf-4 и r-1, но об этом позже, ~~выстраданый~~ [конфиг-файл](topology.yml) или ниже схемы под катом
 
-<figure><img src="stand-plan.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/stand-plan (5).png" alt=""><figcaption></figcaption></figure>
 
 <details>
 
@@ -1393,41 +1393,40 @@ B E      ::/0 [200/0]
 
 Кстати забыл рассказать о замечательной дополнительной tool netlab которая позволяет не путаться в том что и как соединено - graphite. Она отражает как соединены интерфейсы, а также позволяет подключаться на устройства по ssh, причем можно одновременно висеть на нескольких устройствах, что на мой взгляд очень удобно, если не любишь tmux.&#x20;
 
-<figure><img src="graphite.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/graphite.png" alt=""><figcaption></figcaption></figure>
 
 Теперь немного поснифаем трафик, чтобы посмотреть что происходит на leaf-4
 
 Маршруты типа 5 отдаваемые на spine &#x20;
 
-<figure><img src="l4-vni10001.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/l4-vni10001.png" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="l4-vni10000.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/l4-vni10000.png" alt=""><figcaption></figcaption></figure>
 
 Маршруты типа 3 &#x20;
 
-<figure><img src="l4-vni10101.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/l4-vni10101.png" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="l4-vni10100.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/l4-vni10100.png" alt=""><figcaption></figcaption></figure>
 
 Посмотрим в icmp на l4  видим что пакет пришел из фабрики по vni 10000(vrf red type 5) а ответ ушел по vni 10000 (vlan 1000 type 3)  Что то я немного приплутал.
 
-<figure><img src="h1-h6reply.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/h1-h6reply.png" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="h1-h6.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/h1-h6.png" alt=""><figcaption></figcaption></figure>
 
 Проще всего посмотреть круговорот трафика в фабрике оказалось на l3 пропинговав хосты подключенные к нему в разных vrf  Так на 1 запрос от h3 улетает в фабрику, на 2 этот же запрос возвращается из фабрики, на 3 ответ от h4 улетает в фабрику, на 4 ответ прилетает от фабрики. В обратную сторону по ipv6&#x20;
 
-<figure><img src="h4-h3v6.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/h4-h3v6.png" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="h3-h4.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/h3-h4.png" alt=""><figcaption></figcaption></figure>
 
 А если мы посмотрим в l2 связность то пинги в фабрике бегают по своим изолированным vxlan
 
-![h3-h1,h4-h2](h3-h1,h4-h2.png)
+![h3-h1,h4-h2](../.gitbook/assets/h3-h1,h4-h2.png)
 
 1,2 красный vrf 3,4 синий. На этом пожалуй все
 
-Конфигурационные файлы устройств :\
-
+Конфигурационные файлы устройств :<br>
 
 [Spine-1](s1.cfg) [Spine-2](s2.cfg) [Leaf-1](l1.cfg) [Leaf-2](l2.cfg) [Leaf-3](l3.cfg) [Leaf-4](l4.cfg) [Router-1](r1.cfg)

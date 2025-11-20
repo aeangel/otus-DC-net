@@ -10,7 +10,7 @@
 
 ### Схема стенда
 
-![stand-plan](stand-plan.png)
+![stand-plan](<../.gitbook/assets/stand-plan (2).png>)
 
 Стенд делаем по принципу - хосты linux, leaf - frr, spine - eos (arista)
 
@@ -591,13 +591,12 @@ Displayed 6 prefixes (15 paths)
 
 Если заглянуть в wireshark то можно увидеть как на leaf происходит обмен маршрутами второго типа.
 
-![bgp-update](bgp-update.png)
+![bgp-update](../.gitbook/assets/bgp-update.png)
 
 Самым интересным открытием стало что при передаче второго типа маршрутов передаются так же и link-local для ipv6
 
-![bgp-updateipv6](bgp-updateipv6.png)
+![bgp-updateipv6](../.gitbook/assets/bgp-updateipv6.png)
 
-Конфигурационные файлы, забыл сначала приложить, но удобно что можно ввести команду neltab collect и забрать их в директории config. Конфигурационные файлы устройств:\
-
+Конфигурационные файлы, забыл сначала приложить, но удобно что можно ввести команду neltab collect и забрать их в директории config. Конфигурационные файлы устройств:<br>
 
 [Spine-1](s1.cfg) [Spine-2](s2.cfg) [Leaf-1 ](l1.cfg)[Leaf-2](l2.cfg) [Leaf-3](l3.cfg)

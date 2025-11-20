@@ -1,0 +1,135 @@
+---
+provider: clab
+
+nodes:
+ s1:
+  device: eos
+  id: 1
+  loopback:
+    ipv4: 192.168.1.1/32
+ s2:
+  device: eos
+  id: 2
+  loopback:
+    ipv4: 192.168.1.2/32
+ l1:
+  device: frr
+  id: 3
+  loopback:
+    ipv4: 192.168.2.1/32
+ l2:
+  device: frr
+  id: 4
+  loopback:
+    ipv4: 192.168.2.2/32
+ l3:
+  device: frr
+  id: 5
+  loopback:
+    ipv4: 192.168.2.3/32
+ h1:
+  device: linux
+ h2:
+  device: linux
+ h3:
+  device: linux
+ h4:
+  device: linux
+
+links:
+#spine1-leaf1,2,3
+  - interfaces:
+      - node: s1
+        ifname: eth1
+        ipv4: 10.1.1.1
+      - node: l1
+        ifname: eth8
+        ipv4: 10.1.1.2
+    prefix:
+      ipv4: 10.1.1.0/30
+  - interfaces:
+      - node: s1
+        ifname: eth2
+        ipv4: 10.1.1.5
+      - node: l2
+        ifname: eth8
+        ipv4: 10.1.1.6
+    prefix:
+      ipv4: 10.1.1.4/30
+  - interfaces:
+      - node: s1
+        ifname: eth3
+        ipv4: 10.1.1.9
+      - node: l3
+        ifname: eth8
+        ipv4: 10.1.1.10
+    prefix:
+      ipv4: 10.1.1.8/30
+#spine2-leaf1,2,3
+  - interfaces:
+      - node: s2
+        ifname: eth1
+        ipv4: 10.1.2.1
+      - node: l1
+        ifname: eth9
+        ipv4: 10.1.2.2
+    prefix:
+      ipv4: 10.1.2.0/30
+  - interfaces:
+      - node: s2
+        ifname: eth2
+        ipv4: 10.1.2.5
+      - node: l2
+        ifname: eth9
+        ipv4: 10.1.2.6
+    prefix:
+      ipv4: 10.1.2.4/30
+  - interfaces:
+      - node: s2
+        ifname: eth3
+        ipv4: 10.1.2.9
+      - node: l3
+        ifname: eth9
+        ipv4: 10.1.2.10
+    prefix:
+      ipv4: 10.1.2.8/30
+#host1
+  - interfaces:
+      - node: h1
+        ifname: eth1
+        ipv4: 172.16.1.2
+      - node: l1
+        ifname: eth1
+        ipv4: 172.16.1.1
+    prefix:
+      ipv4: 172.16.1.0/24
+#host2
+  - interfaces:
+      - node: h2
+        ifname: eth1
+        ipv4: 172.16.2.2
+      - node: l2
+        ifname: eth1
+        ipv4: 172.16.2.1
+    prefix:
+      ipv4: 172.16.2.0/24
+#host3
+  - interfaces:
+      - node: h3
+        ifname: eth1
+        ipv4: 172.16.3.2
+      - node: l3
+        ifname: eth1
+        ipv4: 172.16.3.1
+    prefix:
+      ipv4: 172.16.3.0/24
+#host4
+  - interfaces:
+      - node: h4
+        ifname: eth1
+        ipv4: 172.16.4.3
+      - node: l3
+        ifname: eth2
+        ipv4: 172.16.4.1
+    prefix:
+      ipv4: 172.16.4.0/24

@@ -10,7 +10,7 @@
 
 ### Схема стенда
 
-![stand-plan](stand-plan.png)
+![stand-plan](<../.gitbook/assets/stand-plan (4).png>)
 
 В силу ограничений функционала frr меняем "вендора" leaf на arista, все же frr это роутер, функционал свитчей в них выполняется через средства linux. И mlag запустить на нем не получилось. В качестве клиента оставляем linux c bond. Стенд делаем по принципу - хосты linux, leaf - eos, spine - eos (arista)
 
@@ -805,7 +805,7 @@ Interface activation interlock  :         unsupported
 
 Все падения будем эмулировать путем перевода в shutdown интерфейсов. Написал сценарий и самому страшно от такого развития событий, представляю в каком шоке был бы мониторинг хД).
 
-![failover](failover.png)
+![failover](../.gitbook/assets/failover.png)
 
 Состояние интерфейсов под катом
 
@@ -904,13 +904,13 @@ Po4094     MLAG peerlink(s) l4 -> l3                         connected    trunk 
 
 Тесты успешно пройдены, несмотря на все наши старания. Конечно при определенной сноровке еще парой shutdown мы могли бы дошатать этот стенд, но проявим сочувствие и соберем конфигурацию. Делается это кстати командой `netlab collect`. Все файлы конфигурации ложатся в папку /config в директории лабы. Для любителей wireshark вот информация с leaf-4, путем нескольких стартов валидации. На них наглядно видно что трафик ходит в обе стороны при отказах.
 
-<figure><img src="l4_ipv4_dump.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/l4_ipv4_dump.png" alt=""><figcaption></figcaption></figure>
 
-<figure><img src="l4_ipv6_dump.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/l4_ipv6_dump.png" alt=""><figcaption></figcaption></figure>
 
 l4 выбран как тот на котором можно увидеть как трафик будет перетекать в peer-link пытаясь попасть на хосты. Где видим что трафик ходит в eth3 и eth4 которые связывают leaf3 и leaf4. eth3 выступает по факту дополнительным путем для evpn, т.к. у нас ibgp то evpn соседство между leaf-3 и spine не упало, просто установился запасной маршрут, и он отлично вещает и принимает маршруты от всех остальных leaf. eth4 выступает peerlink для работы mlag.
 
-<figure><img src="l4_dump_failover.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/l4_dump_failover.png" alt=""><figcaption></figcaption></figure>
 
 <details>
 
@@ -1094,7 +1094,6 @@ O        192.168.2.4/32 [110/20]
 
 Видим что у нас loopback leaf-3 (192.168.2.3) c ценой маршрута 30. leaf-1(192.168.2.1) вообще не отсвечивает.
 
-Конфигурационные файлы устройств(с поднятыми интерфейсами) :\
-
+Конфигурационные файлы устройств(с поднятыми интерфейсами) :<br>
 
 [Spine-1](s1.cfg) [Spine-2](s2.cfg) [Leaf-1](l1.cfg) [Leaf-2](l2.cfg) [Leaf-3](l3.cfg) [Leaf-4](l4.cfg)

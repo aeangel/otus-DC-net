@@ -1,0 +1,8 @@
+interface Loopback1
+   description update-source
+   ip address 192.168.2.0/32
+   ipv6 address fd00::192:168:2:0/128
+   ip ospf area 0.0.0.0
+   ipv6 ospf 1 area 0.0.0.0
+interface Vxlan1
+   vxlan source-interface Loopback1

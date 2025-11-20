@@ -10,7 +10,7 @@
 
 ### Схема стенда
 
-![stand-plan](stand-plan.png)
+![stand-plan](<../.gitbook/assets/stand-plan (6).png>)
 
 Стенд делаем по принципу - хосты linux, leaf - frr, spine - eos (arista)
 
@@ -1353,11 +1353,11 @@ PING 192.168.2.3 (192.168.2.3): 56 data bytes
 
 И кроме себя никого не видим. Тут то мне и пригодился edgeshark.
 
-<figure><img src="edgeshark-lab04.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/edgeshark-lab04.png" alt=""><figcaption></figcaption></figure>
 
 Он нам не только позволяет видеть простыню подключений, но и снимать трафик
 
-<figure><img src="ping-l2-1st-try.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/ping-l2-1st-try.png" alt=""><figcaption></figcaption></figure>
 
 Видим что у нас соурс адрес подставляет интерфейс. Request доходит до целевого хоста, а вот reply сформироваться не может, так как leaf ничего не знает о том как другие leaf подключены к spine. Только лупбеки, можно или явно добавить в анонс сети в bgp на оборудовании. Напрямую указывать в frr соурс адрес из оболочки vtysh нельзя, поэтому делаем пинг из системы.
 
